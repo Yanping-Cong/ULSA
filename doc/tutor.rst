@@ -27,7 +27,6 @@ This parameter can be used when you are using the fuction in the class::
   * I_E_form str: ('seiffert'), the form of extragalactic component except for CMB. 
   * R0_R1_equal bool: in this paper we fixed R0 equals to R1 in emissivity. 
   * using_raw_diffue bool: the input data for fitting parameter of emissivity, if True the data will be smoothed by Gaussian function. 
-  * 
   *using_default_params: if True, using the default spectral index value, if False calculate the spectral index value with the code, otherwise, one can simply input the spectral index to variable of using_default_params. 
   *params_408: if the input of params_408 == [0.,0.,0.,0.,0.], the code will fit the parameters of emissivity in 408Mhz, or one can simply input the parameters of some other fitting result to params_408, if you input nothing, the code will take the default parameters.
   *critical_dis: if True, calculate the critial distance (time consuming), otherwise False.

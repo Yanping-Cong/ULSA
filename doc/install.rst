@@ -8,7 +8,7 @@ Both python2 and python3 can run in a single process，If you want to run in par
 Prerequisites
 -------------
 
-For the installation and proper work of ``LFSM``, the following packages are
+For the installation and proper work of ``ULSA``, the following packages are
 required:
 
     * h5py_\ , Pythonic interface to the HDF5 binary data format;
@@ -18,7 +18,7 @@ required:
     * caput_\ , Cluster Astronomical Python Utilities;
     * NE2001_\, the free electron distribution in galaxy;
     * mpi4py_\, This package provides Python bindings for the Message Passing Interface (MPI) standard;
-.. note:: ``LFSM`` can work without MPI support, in which case, only a single
+.. note:: ``ULSA`` can work without MPI support, in which case, only a single
    process is invoked, but in order to process large amounts of data in parallel
    and distributed manner, mpi4py_ is needed.
 
