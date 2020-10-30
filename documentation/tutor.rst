@@ -3,7 +3,7 @@ Tutorial
 
 .. note::
 
-   This is intended to be a tutorial for the user of *LFSM* package, who will
+   This is intended to be a tutorial for the user of *ULSA* package, who will
    just use the already presented tasks in the package to do some data analysis.
 
 
@@ -26,15 +26,19 @@ This parameter can be used when you are using the fuction in the class::
   * emi_form str: ('exp','sech') the distribution form of emissivity, normally choosen 'exponantial'. 
   * I_E_form str: ('seiffert'), the form of extragalactic component except for CMB. 
   * R0_R1_equal bool: in this paper we fixed R0 equals to R1 in emissivity. 
-  * using_raw_diffue bool: the input data for fitting parameter of emissivity, if True the data will be smoothed by hp.smooth() method. 
-  * only_fit_Anu: fixed False.
+  * using_raw_diffue bool: the input data for fitting parameter of emissivity, if True the data will be smoothed by Gaussian function. 
+  * 
+  *using_default_params: if True, using the default spectral index value, if False calculate the spectral index value with the code, otherwise, one can simply input the spectral index to variable of using_default_params. 
+  *params_408: if the input of params_408 == [0.,0.,0.,0.,0.], the code will fit the parameters of emissivity in 408Mhz, or one can simply input the parameters of some other fitting result to params_408, if you input nothing, the code will take the default parameters.
+  *critical_dis: if True, calculate the critial distance (time consuming), otherwise False.
+  *output_absorp_free_skymap: if True, output the absorption free sky map in input frequency. 
 
 
 Run the code
 ----------------
-an script.py example for calculating constant spectral index situation:
-    >>> from LFSM.absorp_sky_map.produce_healpix_sky_map import absorption_JRZ
-    >>> f = absorption_JRZ(v = v, nside = nside, clumping_factor = 1., index_type = 'constant_index_minus_I_E', distance = dist, test = False, emi_form  = 'exp',I_E_form = 'seiffert',R0_R1_equal=True,using_raw_diffuse = False,only_fit_Anu = False)
+an test.py example for calculating constant spectral index situation:
+    >>> from ULSA.sky_map.produce_healpix_sky_map import absorption_JRZ
+    >>> f = absorption_JRZ(v = v, nside = nside, clumping_factor = 1., index_type = 'constant_index_minus_I_E', distance = dist, test = False, emi_form  = 'exp',I_E_form = 'seiffert',R0_R1_equal=True,using_raw_diffuse = False)
     >>> sky_map_in_healpix = f.mpi()
 
 
@@ -44,12 +48,12 @@ Single process run
 If you do not have an MPI environment installed, or you just want a single
 process run, just do ::
 
-   $ python script.py
+   $ python test.py
 
 
 If you want to submit and run the pipeline in the background, do like ::
 
-   $ nohup python dir/to/scrip.py &> output.txt &
+   $ nohup python dir/example/test.py &> output.txt &
 
 Multiple processes run
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -57,16 +61,16 @@ Multiple processes run
 To run the pipeline in parallel and distributed maner on a cluster using
 multiple processes, you can do something like ::
 
-   $ mpiexec -n N python script.py 
+   $ mpiexec -n N python test.py 
 
 or (in case *script.py* isn't in you working directory) ::
 
-   $ mpiexec -n N python dir/to/script.py
+   $ mpiexec -n N python dir/example/test.py
 
 If you want to submit and run the pipeline in the background on several nodes,
 for example, *node2*, *node3*, *node4*, do like ::
 
-   $ nohup mpiexec -n N -host node2,node3,node4 --map-by node python dir/to/script.py &> output.txt &
+   $ nohup mpiexec -n N -host node2,node3,node4 --map-by node python dir/example/test.py &> output.txt &
 
 .. note::
 
