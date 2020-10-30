@@ -505,9 +505,10 @@ class absorption_JRZ(object):
                     mean_exptao = Y / X
                     pix_value = diffuse_raw_[pix_number] * mean_exptao + I_E*np.exp(-tao[-1])
                     result.append([pix_number,pix_value])
+                    result = np.array(result)
                     #print 'pixel_number',pix_number
-                with h5py.File('./' + str(self.emi_form)+str(self.v)+'MHz_global_spectrum_with_perterbation.hdf5','w') as h:
-                    h.create_dataset('result',data = result)
+                with h5py.File('./' + str(self.emi_form)+str(self.v)+'MHz_healpix_sky_map.hdf5','w') as h:
+                    h.create_dataset('result',data = result[:,1])
                     #h.create_dataset('smooth_result',data = result_absorb)
                     print ('end, good job!, you are the best')
 
