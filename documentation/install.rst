@@ -3,8 +3,7 @@ Installation
 
 Python version
 --------------
-The package works only with python 2 with version >= 2.75. Python 3 does not
-supported currently.
+Both python2 and python3 can run in a single process，If you want to run in parallel, it depends on whether the installed MPI  package is supported by Python2 or Python3. 
 
 Prerequisites
 -------------
@@ -18,6 +17,7 @@ required:
     * matplotlib_\ , A python 2D plotting library;
     * caput_\ , Cluster Astronomical Python Utilities;
     * NE2001_\, the free electron distribution in galaxy;
+    * mpi4py_\, This package provides Python bindings for the Message Passing Interface (MPI) standard;
 .. note:: ``LFSM`` can work without MPI support, in which case, only a single
    process is invoked, but in order to process large amounts of data in parallel
    and distributed manner, mpi4py_ is needed.
@@ -29,7 +29,7 @@ After you have successfully installed the prerequisites, do the following.
 
 First clone this package ::
 
-    $ git clone https://github.com/Yanping-Cong/LFSM-0.1
+    $ git clone https://github.com/Yanping-Cong/ULSA
 
 Then change to the top directory of this package, install it by the usual
 methods, either the standard ::
@@ -42,7 +42,7 @@ or to develop the package ::
 
 It should also be installable directly with `pip` using the command ::
 
-    $ pip install [-e] git+https://github.com/Yanping-Cong/LFSM-0.1.git
+    $ pip install [-e] git+https://github.com/Yanping-Cong/ULSA.git
 
 
 
@@ -54,8 +54,5 @@ It should also be installable directly with `pip` using the command ::
 .. _scipy: https://www.scipy.org
 .. _matplotlib: http://matplotlib.org
 .. _caput: https://github.com/zuoshifan/caput/tree/zuo/develop
-.. _cora: https://github.com/radiocosmology/cora.git
-.. _aipy: https://github.com/zuoshifan/aipy/tree/zuo/develop
-.. _cython: http://cython.org
 .. _mpi4py: http://mpi4py.readthedocs.io/en/stable/
 .. _NE2001: http://hosting.astro.cornell.edu/~cordes/NE2001/
