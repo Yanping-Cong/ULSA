@@ -14,7 +14,7 @@ for user only:
 python setup.py install --user
 ```
 
-## example
+## Example
 There are an example in ./example, one can simpyly go to the dir and run test.py
 
 ## Documentation
