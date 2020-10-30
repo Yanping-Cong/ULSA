@@ -18,4 +18,4 @@ python setup.py install --user
 There are an example in ./example, one can simpyly go to the dir and run test.py
 
 ## Documentation
-Documentation can be found at <https://lfsm-01.readthedocs.io/en/latest/>.
+Documentation can be found at <https://ulsa.readthedocs.io/en/latest/>.
