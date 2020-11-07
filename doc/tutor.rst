@@ -7,39 +7,63 @@ Tutorial
    just use the already presented tasks in the package to do some data analysis.
 
 
-.. contents::
+How to use the code
+-------------------
 
-konwledge of the input parameters
--------------------------------
+    >>> from ULSA.sky_map.produce_absorbed_sky_map import absorption_JRZ
+    >>> f = absorption_JRZ(v, nside, clumping_factor, index_type, distance,emi_form,I_E_form,R0_R1_equal,using_raw_diffuse,test=False, using_default_params=True, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0)
+    >>> sky_map_in_healpix = f.mpi()
 
+This parameter is useful when you are using the fuction:
 
+  * v int: frequency in MHz of the output skymap. 
+  * nside int: the NSIDE decide the resolution of the skymap in healpix mode. 
+  * clumping_factor float: the clumping factor influnce the absorption, we use the value of 1. in our paper. 
+  * index_type str: ('constant_index_minus_I_E', 'freq_dependence_index_minus_I_E', 'pixel_dependence_index_minus_I_E'), one of them can be choose as different model of spectral index.
+  * distance kpc: the max integrated distance for galaxy when considering the free-free absorption. 
+  * test: normally False, if True one can do some test programm in the position under test==True. 
+  * emi_form str: ('exp','sech') the distribution form using in emissivity, 'exponantial' or 'sech^2' will be select, one can change the form of emissivity by need. 
+  * I_E_form str:  (’seiffert’,’seiffert freq depend’), the form of extragalactic component minus CMB, if index type == ’constant index minus I E’ or ’pixel dependence index minus I E’, accordingly I E form should　choose ’seiffert’. if index type == ’freq dependence index minus I E’, accordingly I E form should choose ’seiffert freq depend’ . 
+  * R0_R1_equal bool:  choosing True in this paper, R0 and R1 is the parameters of emissivity. 
+  * using_raw_diffue bool:  the input data for fitting parameter of emissivity, if True the data will be smoothed by Gaussian kernel. 
+  * using_default_params bool:  if True, using the default spectral index value, if False calculate the spectral index value with the code, otherwise, one can simply input the spectral index to variable of using default params. 
+  * params_408 list:  if the input of params 408 == [0.,0.,0.,0.,0.], the code will fit the parameters of emissivity in　408Mhz, or one can simply input the parameters of some other fitting result to params 408, By default, if you　do nothing, the code will take the default parameters.
+  * critical_dis bool: if True, calculating the half brightness distance, otherwise False.
+  * output_absorp_free_skymap bool:  if True, output the absorption free sky map at frequency v. 
 
+where, the “v” indicates the frequency of the output sky map. Users can output sky map at different frequencies according to their needs, or use a loop to output sky map at a series of frequencies. By default, the output sky map coordinates are galactic coordinate system, users can convert to another coordinate system by the “change_coord” function, as described in the following example. 
+The “nside” parameter controls the resolution of the output sky map. In general, the pixel number of the sky map is equal to 12 * nside * nside. The “clumping factor” amplify the free-free absorption effect, and in our final model it is appropriate to determine that the value of the clumping factor is 1. 
+“distance” is set to the galactic maximum integration scale, and in general, 50 kpc is the absorption scale that would be sufficient to cover the entire galaxy. For normal users, the "test" parameter is set to False, and for developers who want to modify the code, you can do some other custom tests when test = true. “emi_form” determines the distribution of emissivity, so we have two options, one is an exponential distribution, the other is an exponential distribution multiplied by the square of a hyperbolic sine function. 
+In the original emissivity distribution, R0 and R1 are two different parameters, and it is proved that R0 and R1 equaling to each other is an optimal choice. The “using_raw_diffuse” parameter determines whether to smooth the data before fitting the emissivity function, emissivity is a smooth changed distribution with R and Z. The selection of data smoothing can better remove the negative effects of fitting caused by small-scale structure. The remaining parameters are the default parameters, we recommend using the default values, for developers, according to the above parameter description, flexible to change parameter by your need.
 
-This parameter can be used when you are using the fuction in the class::
+Some examples for different need
+--------------------------------
 
-  * v int: frequency in MHz of the input skymap. 
-  * nside int: the NSIDE of the skymap in healpix mode. 
-  * clumping_factor float: the clumping factor influnce the absorption, the value set to one in our model. 
-  * index_type str: ('constant_index_minus_I_E', 'freq_dependence_index_minus_I_E', 'pixel_dependence_index_minus_I_E'), one of them can be choose as different type of spectral index one need to consider.
-  * distance kpc: the integration max distance for galaxy absorption. 
-  * test: normally False, if True will do some test programm. 
-  * emi_form str: ('exp','sech') the distribution form of emissivity, normally choosen 'exponantial'. 
-  * I_E_form str: ('seiffert'), the form of extragalactic component except for CMB. 
-  * R0_R1_equal bool: in this paper we fixed R0 equals to R1 in emissivity. 
-  * using_raw_diffue bool: the input data for fitting parameter of emissivity, if True the data will be smoothed by Gaussian function. 
-  * using_default_params: if True, using the default spectral index value, if False calculate the spectral index value with the code, otherwise, one can simply input the spectral index to variable of using_default_params. 
-  * params_408: if the input of params_408 == [0.,0.,0.,0.,0.], the code will fit the parameters of emissivity in 408Mhz, or one can simply input the parameters of some other fitting result to params_408, if you input nothing, the code will take the default parameters.
-  * critical_dis: if True, calculate the critial distance (time consuming), otherwise False.
-  * output_absorp_free_skymap: if True, output the absorption free sky map in input frequency. 
+1. example one: Users want to output a sky map at 1 Mhz with a NSIDE of 64 and a spectral index in the form of
+a constant spectral index. they can choose the following parameter setting::
 
+    >>> (v = 1, nside = 64, clumping factor = 1., index type = ’constant index minus I E’, distance = 50,test = False, emi form = ’exp’,I E form = ’seiffert’,R0 R1 equal=True,using raw diffuse = False,using default params = True,critical dis = False,output absorp free skymap = False)
+
+2. example two: Users want to output a sky map at 1 Mhz with a NSIDE of 64 and a spectral index in the form of
+a frequency dependent spectral index. they can choose the following parameter setting::
+
+    >>> (v = 1, nside = 64, clumping factor = 1., index type = ’freq dependence index minus I E’, distance = 50, test = False, emi form = ’exp’,I E form = ’seiffert freq depend’,R0 R1 equal = True,using raw diffuse = False,using default params = True,critical dis = False,output absorp free skymap = False)
+
+3. example three: Users want to output a sky map at 1 Mhz with a NSIDE of 64 and a spectral index in the form
+of a pixel dependent spectral index. they can choose the following parameter setting::
+
+    >>> (v = 1, nside = 64, clumping factor = 1., index type = ’pixel dependence index minus I E’, distance = 50, test = False, emi form = ’exp’,I E form = ’seiffert’,R0 R1 equal = True,using raw diffuse = False,using default params = True,critical dis = False,output absorp free skymap = False)
+
+4. if one want to change the coordinate from 'Galactic' to other coordinate, one can simplely using function "change_coord"::
+    >>> from ULSA.sky_map.produce_absorbed_sky_map import absorption_JRZ
+    >>> f = absorption_JRZ(v, nside, clumping_factor, index_type, distance,emi_form,I_E_form,R0_R1_equal,using_raw_diffuse,test=False, using_default_params=True, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0)
+    >>> sky_map_in_healpix = f.mpi()
+    >>> f.change_coord(sky_map_in_healpix,["G","C"])
+where ["G","C"], the first character is the coordinate system of sky_map_in_healpix, second character is the coordinate system of the output map. As in HEALPIX, allowed　coordinate systems are 'G' (galactic), 'E' (ecliptic) or 'C' (equatorial)
 
 Run the code
 ----------------
-an example.py example for calculating constant spectral index situation:
-    >>> from ULSA.sky_map.produce_absorbed_sky_map import absorption_JRZ
-    >>> f = absorption_JRZ(v = v, nside = nside, clumping_factor = 1., index_type = 'constant_index_minus_I_E', distance = dist, test = False, emi_form  = 'exp',I_E_form = 'seiffert',R0_R1_equal=True,using_raw_diffuse = False)
-    >>> sky_map_in_healpix = f.mpi()
-
+an example.py example for calculating constant spectral index condition is under ULSA/example/example.py:
 
 Single process run
 ^^^^^^^^^^^^^^^^^^
