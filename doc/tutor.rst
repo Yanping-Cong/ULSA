@@ -3,12 +3,14 @@ Tutorial
 
 .. note::
 
-   This is intended to be a tutorial for the user of *ULSA* package, who will
-   just use the already presented tasks in the package to do some data analysis.
+   This is intended to be a tutorial for using of *ULSA* package, who will
+   just use the already presented functions in the package to do some simulation.
 
 
 How to use the code
 -------------------
+
+After you sucessfully install the package of ULSA, one can simply do in ipython ::
 
     >>> from ULSA.sky_map.produce_absorbed_sky_map import absorption_JRZ
     >>> f = absorption_JRZ(v, nside, clumping_factor, index_type, distance,emi_form,I_E_form,R0_R1_equal,using_raw_diffuse,test=False, using_default_params=True, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0)
@@ -54,16 +56,42 @@ of a pixel dependent spectral index. they can choose the following parameter set
 
     >>> (v = 1, nside = 64, clumping factor = 1., index type = ’pixel dependence index minus I E’, distance = 50, test = False, emi form = ’exp’,I E form = ’seiffert’,R0 R1 equal = True,using raw diffuse = False,using default params = True,critical dis = False,output absorp free skymap = False)
 
-4. if one want to change the coordinate from 'Galactic' to other coordinate, one can simplely using function "change_coord"::
+Change the coordinate of the output sky_map
+-------------------------------------------
+
+if one want to change the coordinate from 'Galactic' to other coordinate, one can simplely using function "change_coord"::
+
     >>> from ULSA.sky_map.produce_absorbed_sky_map import absorption_JRZ
     >>> f = absorption_JRZ(v, nside, clumping_factor, index_type, distance,emi_form,I_E_form,R0_R1_equal,using_raw_diffuse,test=False, using_default_params=True, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0)
     >>> sky_map_in_healpix = f.mpi()
     >>> f.change_coord(sky_map_in_healpix,["G","C"])
+
 where ["G","C"], the first character is the coordinate system of sky_map_in_healpix, second character is the coordinate system of the output map. As in HEALPIX, allowed　coordinate systems are 'G' (galactic), 'E' (ecliptic) or 'C' (equatorial)
 
 Run the code
 ----------------
-an example.py example for calculating constant spectral index condition is under ULSA/example/example.py:
+
+an example.py example for calculating constant spectral index condition is under ULSA/example/example.py ::
+
+    $ from ULSA.sky_map.produce_absorbed_sky_map import absorption_JRZ
+    $ import healpy as hp
+    $ import numpy as np
+    $ import matplotlib.pyplot as plt
+    $ sky_map_list = []
+    $ for v in range(1,10,0.1):
+    $     f = absorption_JRZ(v = v, nside = 64, clumping factor = 1., index type = ’pixel dependence index minus I E’, distance = 50, test = False, emi form = ’exp’,I E form = ’seiffert’,R0 R1 equal = True,using raw diffuse = False,using default params = True,critical dis = False,output absorp free skymap = False)
+    $     sky_map_list.append(f.mpi())
+    $ # we got a list of sky_map with frequency from 1Mhz to 10Mhz with step 0.1Mhz.
+    $ # then plot the data using mollview
+    $ plt.figure(1)
+    $ for sky_map in sky_map_list
+    $     hp.mollview(np.log10(sky_map),cmap = plt.cm.jet)
+    $     plt.show() # or plt.savefig('xxx.eps',format='eps')
+
+.. note ::
+
+   All the used observation data is from website, they all locate in the dir of /obs_sky_data, if there are new observation data in low frequency, you can change the input data by replacing or adding the data under the dir of /obs_sky_data/*
+
 
 Single process run
 ^^^^^^^^^^^^^^^^^^
