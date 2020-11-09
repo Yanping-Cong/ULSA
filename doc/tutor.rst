@@ -39,7 +39,7 @@ The “nside” parameter controls the resolution of the output sky map. In gene
 In the original emissivity distribution, R0 and R1 are two different parameters, and it is proved that R0 and R1 equaling to each other is an optimal choice. The “using_raw_diffuse” parameter determines whether to smooth the data before fitting the emissivity function, emissivity is a smooth changed distribution with R and Z. The selection of data smoothing can better remove the negative effects of fitting caused by small-scale structure. The remaining parameters are the default parameters, we recommend using the default values, for developers, according to the above parameter description, flexible to change parameter by your need.
 
 Some examples for different need
---------------------------------
+-------------------------------------
 
 1. example one: Users want to output a sky map at 1 Mhz with a NSIDE of 64 and a spectral index in the form of
 a constant spectral index. they can choose the following parameter setting::
@@ -57,7 +57,7 @@ of a pixel dependent spectral index. they can choose the following parameter set
     >>> (v = 1, nside = 64, clumping factor = 1., index type = ’pixel dependence index minus I E’, distance = 50, test = False, emi form = ’exp’,I E form = ’seiffert’,R0 R1 equal = True,using raw diffuse = False,using default params = True,critical dis = False,output absorp free skymap = False)
 
 Change the coordinate of the output sky_map
--------------------------------------------
+--------------------------------------------------
 
 if one want to change the coordinate from 'Galactic' to other coordinate, one can simplely using function "change_coord"::
 
@@ -78,7 +78,7 @@ an example.py example for calculating constant spectral index condition is under
     $ import numpy as np
     $ import matplotlib.pyplot as plt
     $ sky_map_list = []
-    $ for v in range(1,10,0.1):
+    $ for v in [1,3,10]:
     $     f = absorption_JRZ(v = v, nside = 64, clumping factor = 1., index type = ’pixel dependence index minus I E’, distance = 50, test = False, emi form = ’exp’,I E form = ’seiffert’,R0 R1 equal = True,using raw diffuse = False,using default params = True,critical dis = False,output absorp free skymap = False)
     $     sky_map_list.append(f.mpi())
     $ # we got a list of sky_map with frequency from 1Mhz to 10Mhz with step 0.1Mhz.
