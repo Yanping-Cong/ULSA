@@ -72,7 +72,36 @@ class absorption_JRZ(object):
             self.Beta_G = self.pixel_dependence_index_minus_I_E()
 
 
+    def change_coord(self, m, coord):
+        
+        """ Change coordinates of a HEALPIX map
+        Parameters
+        ----------
+        m : map or array of maps
+          map(s) to be rotated
+        coord : sequence of two character
+          First character is the coordinate system of m, second character
+          is the coordinate system of the output map. As in HEALPIX, allowed
+          coordinate systems are 'G' (galactic), 'E' (ecliptic) or 'C' (equatorial)
+        Example
+        -------
+        The following rotate m from galactic to equatorial coordinates.
+        Notice that m can contain both temperature and polarization.
+        >>>> change_coord(m, ['G', 'C'])
+        """
+        # Basic HEALPix parameters
+        npix = m.shape[-1]
+        nside = hp.npix2nside(npix)
+        ang = hp.pix2ang(nside, np.arange(npix))
+    
+        # Select the coordinate transformation
+        rot = hp.Rotator(coord=reversed(coord))
 
+        # Convert the coordinates
+        new_ang = rot(*ang)
+        new_pix = hp.ang2pix(nside, *new_ang)
+
+        return m[..., new_pix]
     def constant_index_minus_I_E(self):
         if self.using_default_params == True:
             beta = -2.49
