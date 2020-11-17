@@ -20,15 +20,21 @@ from ULSA.emissivity_fitting.produce_data_for_fitting import smooth
 #from Params.interpolate_sky.interpolate_sky_map import produce_index
 class free_free(object):
 
-    def __init__(self, v, nside, index_type, dist,emi_form,I_E_form,R0_R1_equal,using_raw_diffuse,using_default_params,params_408=np.array([71.19, 4.23, 0.03, 0.47, 0.77])
+    def __init__(self, v, nside, index_type, dist, using_raw_diffuse,using_default_params,v_file_dir=None,params_408=np.array([71.19, 4.23, 0.03, 0.47, 0.77])
 ):
         self.v = v#20Mhz frequency in hz
         self.nside = nside       
         self.index_type = index_type
         self.dist = dist
-        self.I_E_form = I_E_form
-        self.emi_form = emi_form
-        self.R0_R1_equal = R0_R1_equal
+        if self.index_type == 'constant_index_minus_I_E':
+            self.I_E_form = 'seiffert'
+        if self.index_type == 'pixel_dependence_index_minus_I_E':
+            self.I_E_form = 'seiffert'
+        if self.index_type == 'freq_dependence_index_minus_I_E':
+            self.I_E_form = 'seiffert_freq_depend' 
+        self.emi_form = 'exp'
+        self.R0_R1_equal = True
+        self.v_file_dir = v_file_dir
         self.using_raw_diffuse = using_raw_diffuse
         self.using_default_params = using_default_params
         #self.params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77])
@@ -36,7 +42,7 @@ class free_free(object):
     
     def produce_xyz(self):
         #v in Mhz
-        result = smooth(self.nside,self.v, self.index_type,self.I_E_form,self.using_raw_diffuse, self.using_default_params).add_5()
+        result = smooth(self.nside,self.v, self.index_type,self.I_E_form,self.using_raw_diffuse, self.using_default_params,self.v_file_dir).add_5()
         return result
 
 

@@ -40,19 +40,16 @@ dist = 50.
 
 class absorption_JRZ(object):
     
-    def __init__(self, v, nside, clumping_factor, index_type, distance,emi_form,I_E_form,R0_R1_equal,using_raw_diffuse,test=False, using_default_params=True, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
+    def __init__(self, v, nside, index_type, distance,using_raw_diffuse, v_file_dir=None, emi_form='exp',R0_R1_equal=True, using_default_params=True, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
         self.v = v
         self.nside = nside
-        self.clumping_factor = clumping_factor
-        self.test = test
         self.index_type = index_type
         self.dist = distance
         self.emi_form = emi_form
-        self.I_E_form = I_E_form
         self.R0_R1_equal = R0_R1_equal
         self.using_raw_diffuse = using_raw_diffuse
-        #self.only_fit_Anu = only_fit_Anu
         self.using_default_params = using_default_params
+        self.v_file_dir = v_file_dir
         self.params_408 = params_408
         self.critical_dis = critical_dis
         self.output_absorp_free_skymap = output_absorp_free_skymap
@@ -65,48 +62,21 @@ class absorption_JRZ(object):
         self.file_dir2 = _path +'/obs_sky_data'
         self.file_dir1 = _path +'/ULSA/spectral_index_fitting'
         if self.index_type == 'constant_index_minus_I_E':
-
+            self.I_E_form = 'seiffert'
             self.Beta_G_constant = self.constant_index_minus_I_E()
         if self.index_type == 'pixel_dependence_index_minus_I_E':
-
+            self.I_E_form = 'seiffert'
             self.Beta_G = self.pixel_dependence_index_minus_I_E()
+        if self.index_type == 'freq_dependence_index_minus_I_E':
+            self.I_E_form = 'seiffert_freq_depend'
 
 
-    def change_coord(self, m, coord):
-        
-        """ Change coordinates of a HEALPIX map
-        Parameters
-        ----------
-        m : map or array of maps
-          map(s) to be rotated
-        coord : sequence of two character
-          First character is the coordinate system of m, second character
-          is the coordinate system of the output map. As in HEALPIX, allowed
-          coordinate systems are 'G' (galactic), 'E' (ecliptic) or 'C' (equatorial)
-        Example
-        -------
-        The following rotate m from galactic to equatorial coordinates.
-        Notice that m can contain both temperature and polarization.
-        >>>> change_coord(m, ['G', 'C'])
-        """
-        # Basic HEALPix parameters
-        npix = m.shape[-1]
-        nside = hp.npix2nside(npix)
-        ang = hp.pix2ang(nside, np.arange(npix))
-    
-        # Select the coordinate transformation
-        rot = hp.Rotator(coord=reversed(coord))
 
-        # Convert the coordinates
-        new_ang = rot(*ang)
-        new_pix = hp.ang2pix(nside, *new_ang)
-
-        return m[..., new_pix]
     def constant_index_minus_I_E(self):
         if self.using_default_params == True:
             beta = -2.49
         elif self.using_default_params == False:
-            f = constant_index()
+            f = constant_index(self.v_file_dir)
             beta = f.calculate_index(self.nside)
         else:
             beta = self.using_default_params
@@ -120,7 +90,7 @@ class absorption_JRZ(object):
             beta_1 = self.beta_1;v_1 = self.v_1
             beta = beta0 + beta_1 * np.exp(-freq/v_1)
         elif self.using_default_params == False:
-            f = freq_dependent_index(freq, self.beta_1, self.v_1)
+            f = freq_dependent_index(freq, self.beta_1, self.v_1,self.v_file_dir)
             beta = f.calculate_index(self.nside)
         else:
             beta0, beta_1, v_1 = self.using_default_params
@@ -134,7 +104,7 @@ class absorption_JRZ(object):
             with h5py.File(self.file_dir1+'/spectral_index_map.hdf5','r') as f:
                 index = f['new_map'][:]
         elif self.using_default_params == False:
-            f = direction_dependent_index()
+            f = direction_dependent_index(self.v_file_dir)
             index = f.combined_index(256)
         else:
             index = self.using_default_params
@@ -264,7 +234,7 @@ class absorption_JRZ(object):
         return quad(fun_inte, 0, self.dist)[0]
     
     def Delt_T(self):
-        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,emi_form = self.emi_form,I_E_form = self.I_E_form,R0_R1_equal = self.R0_R1_equal,using_raw_diffuse = self.using_raw_diffuse, using_default_params = self.using_default_params,params_408 = self.params_408)
+        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,v_file_dir = self.v_file_dir)
         params = g.params()
         abcz0 = params.copy()
         nside = self.nside
@@ -289,9 +259,8 @@ class absorption_JRZ(object):
 
         diffuse_raw = self.diffuse_x(self.v) 
         delt_m = diffuse_raw + I_E - m
-        return delt_m,diffuse_raw,m
+        return params,delt_m,diffuse_raw,m
 
-############################################################
     def Fortran2Py_optical_deepth(self, l, b, Te = 8000):
         v = self.v * 1e6 #v in MHz
         rad=57.2957795
@@ -299,7 +268,8 @@ class absorption_JRZ(object):
         #distance equals 50kpc
         #dist=50.0
         
-        if self.test == True:
+        #if self.test == True:
+        if False:
             
             step = 0.1
         else:
@@ -320,7 +290,8 @@ class absorption_JRZ(object):
  
          
     def integrate_by_hand(self, f, a, b, args = [], dx=0.01):
-        if self.test == True:
+        #if self.test == True:
+        if False:
             dx = 0.1
             step = dx
         else:
@@ -343,7 +314,8 @@ class absorption_JRZ(object):
 
     def Quad(self, f, a, b, args = [], dx=0.01):
         #the different to integrate_by_hand is not including I_E
-        if self.test == True:
+        #if self.test == True:
+        if False:
             dx = 0.1
             step = dx
         else:
@@ -474,9 +446,7 @@ class absorption_JRZ(object):
 
         if rank == 0:
             print ('in rank0') 
-            g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,emi_form = self.emi_form,I_E_form = self.I_E_form,R0_R1_equal = self.R0_R1_equal,using_raw_diffuse = self.using_raw_diffuse, using_default_params = self.using_default_params,params_408 = self.params_408)
-            params = g.params()
-            delt_m,diffuse_raw_,unabsorb  = self.Delt_T()
+            params,delt_m,diffuse_raw_,unabsorb  = self.Delt_T()
         else:
             delt_m = None
             params = None
@@ -493,7 +463,8 @@ class absorption_JRZ(object):
         for pix_number in local_range:
             a = time.time()
             l, b = hp.pix2ang(self.nside, pix_number, nest = False, lonlat = True)
-            if self.test == True:
+            #if self.test == True:
+            if False:
                 pix_value =self.integrate_by_hand(self._new, 0.1, dist, args=(l, b, delt_m[pix_number], params)) 
             else:
 
@@ -505,12 +476,14 @@ class absorption_JRZ(object):
                 l, b = hp.pix2ang(self.nside, pix_number, nest = False, lonlat = True)
             b = time.time()
             
-            if self.test == True:
+            #if self.test == True:
+            if False:
 
                 result_absorb.append([pix_number, pix_value])
             else:
                 result_absorb.append([pix_number, pix_value, distance])
-        if self.test == True:
+        #if self.test == True:
+        if False:
 
             result_absorb = mpiutil.gather_list(result_absorb, root = None)
         else:
@@ -519,15 +492,11 @@ class absorption_JRZ(object):
             if self.critical_dis == True:
                 with h5py.File('critical_distance.hdf5','r') as f:
                     f.create_dataset('critical_distance',data = result_absorb[:,2])
-            if self.test == True:
+            #if self.test == True:
+            if False:
                 with h5py.File('./' + str(self.emi_form)+str(self.v) + 'F2py_absorb.hdf5', 'w') as f:
                     f.create_dataset('F2py_absorb', data = result_absorb)
             else:
-                #with h5py.File('./' + 'exp'+str(self.v)+'Mhz_delt_m_and_unabsorb_and_delt_m_percentage.hdf5','r') as f:
-                #    #print f.keys()
-                #    unabsorb = f['integrated_temperature_total_m'][:]
-                #    diffuse_raw = f['diffuse_raw'][:]
-                #apple,diffuse_raw,unabsorb = self.Delt_T()
                 result_absorb = np.array(result_absorb)
                 absorb = result_absorb[:,1]
                 I_E = self.I_E(self.v)
@@ -552,15 +521,3 @@ class absorption_JRZ(object):
                     print ('end, good job!, you are the best')
 
             return result
-
-#if __name__ == '__main__':
-#    for v in np.arange(1,2,1):
-#        v = round(v,1)
-#        nside = 2**2
-#        # step integrate = 0.1, only calculate F2py absorb result for test = True
-#        cla = absorption_JRZ(v = v, nside = nside, clumping_factor = 1., index_type = 'constant_index_minus_I_E', distance = dist, test = False, emi_form  = 'exp',I_E_form = 'seiffert',R0_R1_equal=True,using_raw_diffuse = False)
-#        cla.mpi()
-#        #cla.Fortran2Py_optical_deepth(l=60,b=10.)
-##index_type = 'constant_index_minus_I_E'            I_E_form:"no_seiffert","seiffert","Dowell"
-##             'freq_dependence_index_minus_I_E'     I_E_form:"extra_freq_dependence","seiffert_freq_depend"
-##             'pixel_dependence_index_minus_I_E'

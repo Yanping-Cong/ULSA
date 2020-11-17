@@ -14,11 +14,12 @@ import sys
 import os
 
 class constant_index(object):
-    def __init__(self):
+    def __init__(self,v_file_dir=None):
         _path = os.path.dirname(os.path.abspath(__file__))
         _path = os.path.split(_path)[0]
         _path = os.path.split(_path)[0]
         self.file_dir = _path +'/obs_sky_data'
+        self.v_file_dir = v_file_dir
     def unit(self,v):
         return np.square(v*1e6) * 2*K/C**2
     
@@ -210,14 +211,59 @@ class constant_index(object):
         hpmap_50 = self.change_coord(hpmap_50,['C','G'])
         hpmap_60 = self.change_coord(hpmap_60,['C','G'])
         hpmap_70 = self.change_coord(hpmap_70,['C','G'])
-        hpmap_45_old = np.array(hpmap_45_old,dtype='float64') 
+        hpmap_45_old = np.array(hpmap_45_old,dtype='float64')
+
+
+
         freq = np.array([45,35,38,40,50,60,70,74,80])
+        #extra data part 
+        if self.v_file_dir != None:
+            result = {}
+
+            for v,dir_ in self.v_file_dir.items():
+                f = h5py.File(self.file_dir + dir_,'r')
+                data = f['data'][:]
+                X = data.copy()
+                X = self.change_coord(X,['C','G'])
+                nans, x= self.nan_helper(X)
+                X[nans]= np.interp(x(nans), x(~nans), X[~nans])
+                X = self.smooth(X)
+                #so the nan value region will be tell apart by >0 rule
+                X[nans] = 0.
+                X = hp.ud_grade(X,downgrade_to)
+                f.close()
+                result[v] = X
+
+            Freq = []
+            Value = []
+            for key,value in result.items():
+                #print (eval(key))
+                Freq.append(key)
+                Value.append(value)
+            freq = list(freq) + Freq
+            freq = np.array(freq)
+
         #spectral_index_lwa_and_408 = []
         X1 = [];X2=[];Y =[]
         for i in range(12*downgrade_to**2):
             mask_condition = np.array([hpmap_45_old[i]-2.725-self.I_E(45), hpmap_35[i]-2.725-self.I_E(35), hpmap_38[i]-2.725-self.I_E(38), hpmap_40[i]-2.725-self.I_E(40), hpmap_50[i]-2.725-self.I_E(50), hpmap_60[i]-2.725-self.I_E(60), hpmap_70[i]-2.725-self.I_E(70), hpmap_74[i]-2.725-self.I_E(74), hpmap_80[i]-2.725-self.I_E(80)])
+            if self.v_file_dir != None:
+                result_ = [] 
+                for j in range(len(Value)):
+                    result_.append(Value[j][i]-2.725-self.I_E(Freq[j]))
+                mask_condition = list(mask_condition) + result_
+                mask_condition = np.array(mask_condition)
+            
             mask_ = np.where(mask_condition>0)[0]
             value_freq = np.array([hpmap_45_old[i] - 2.725, hpmap_35[i]-2.725, hpmap_38[i]-2.725, hpmap_40[i]-2.725, hpmap_50[i]-2.725, hpmap_60[i]-2.725, hpmap_70[i]-2.725, hpmap_74[i]-2.725, hpmap_80[i]-2.725])
+            if self.v_file_dir != None:
+                append_value_freq = []
+                for j in range(len(Value)):
+                    append_value_freq.append(Value[j][i]-2.725)
+
+                value_freq = list(value_freq) + append_value_freq
+                value_freq = np.array(value_freq)
+
             value_freq = value_freq[mask_]
             
             

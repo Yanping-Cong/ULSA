@@ -1,4 +1,7 @@
+include README.rst
 recursive-include obs_sky_data *
 recursive-include ULSA/spectral_index_fitting *
-
+recursive-include ULSA/NE2001 *
+#recursive-include funniest/NE2001_4python *
+#recursive-include LFSM/absorp_sky_map *
 
