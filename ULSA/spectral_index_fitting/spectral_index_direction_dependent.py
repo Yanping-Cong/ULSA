@@ -277,6 +277,8 @@ class direction_dependent_index(object):
             new_map.append(pix_value)
         new_map = np.array(new_map)
         new_map = self.change_coord(new_map,['C','G'])
+        with h5py.File('spectral_index_map.hdf5','w') as f:
+            f.create_dataset('spectral_index',data = new_map)
         return new_map    
         
     def index_between_45_and_408(self,map_45_old,map_408):

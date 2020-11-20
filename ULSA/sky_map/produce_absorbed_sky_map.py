@@ -40,7 +40,7 @@ dist = 50.
 
 class absorption_JRZ(object):
     
-    def __init__(self, v, nside, index_type, distance,using_raw_diffuse, v_file_dir=None, emi_form='exp',R0_R1_equal=True, using_default_params=True, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
+    def __init__(self, v, nside, index_type, distance,using_raw_diffuse, v_file_dir=None, emi_form='exp',R0_R1_equal=True, using_default_params=True, input_spectral_index = None, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
         self.v = v
         self.nside = nside
         self.index_type = index_type
@@ -48,6 +48,7 @@ class absorption_JRZ(object):
         self.emi_form = emi_form
         self.R0_R1_equal = R0_R1_equal
         self.using_raw_diffuse = using_raw_diffuse
+        self.input_spectral_index = input_spectral_index
         self.using_default_params = using_default_params
         self.v_file_dir = v_file_dir
         self.params_408 = params_408
@@ -73,41 +74,51 @@ class absorption_JRZ(object):
 
 
     def constant_index_minus_I_E(self):
-        if self.using_default_params == True:
-            beta = -2.49
-        elif self.using_default_params == False:
-            f = constant_index(self.v_file_dir)
-            beta = f.calculate_index(self.nside)
-        else:
-            beta = self.using_default_params
+        if self.input_spectral_index != None:
+            beta = self.input_spectral_index[0]
+        if self.input_spectral_index == None:
+            if self.using_default_params == True:
+                beta = -2.49
+            if self.using_default_params == False:
+                f = constant_index(self.v_file_dir)
+                beta = f.calculate_index(self.nside)
+
         #beta = float(-2.4894)
         index_ = np.array(12*self.nside**2 * [beta])
         return index_
 
     def freq_dependence_index_minus_I_E(self,freq):
-        if self.using_default_params == True:
-            beta0 = -2.49
-            beta_1 = self.beta_1;v_1 = self.v_1
-            beta = beta0 + beta_1 * np.exp(-freq/v_1)
-        elif self.using_default_params == False:
-            f = freq_dependent_index(freq, self.beta_1, self.v_1,self.v_file_dir)
-            beta = f.calculate_index(self.nside)
-        else:
-            beta0, beta_1, v_1 = self.using_default_params
-        #beta_1 = self.beta_1;v_1 = self.v_1
-            beta = beta0 + beta_1 * np.exp(-freq/v_1)
+        if self.input_spectral_index != None:
+            beta0, beta_1, v_1 = self.input_spectral_index[0],self.input_spectral_index[1],self.input_spectral_index[2]
+        if self.input_spectral_index == None:
+            if self.using_default_params == True:
+                beta0 = -2.49
+                beta_1 = self.beta_1;v_1 = self.v_1
+                beta = beta0 + beta_1 * np.exp(-freq/v_1)
+            if self.using_default_params == False:
+                f = freq_dependent_index(freq, self.beta_1, self.v_1,self.v_file_dir)
+                beta = f.calculate_index(self.nside)
+                #beta_1 = self.beta_1;v_1 = self.v_1
+                beta = beta0 + beta_1 * np.exp(-freq/v_1)
         index_ = beta
         return index_
 
     def pixel_dependence_index_minus_I_E(self):
-        if self.using_default_params == True:
-            with h5py.File(self.file_dir1+'/spectral_index_map.hdf5','r') as f:
-                index = f['new_map'][:]
-        elif self.using_default_params == False:
-            f = direction_dependent_index(self.v_file_dir)
-            index = f.combined_index(256)
-        else:
-            index = self.using_default_params
+        if self.input_spectral_index != None:
+            index = self.input_spectral_index
+        if self.input_spectral_index == None:
+            if self.using_default_params == True:
+                try:
+                    with h5py.File(self.file_dir1+'/spectral_index_map.hdf5','r') as f:
+                        index = f['spectral_index'][:]
+                except:
+                    f = direction_dependent_index(self.v_file_dir)
+                    index = f.combined_index(256)
+
+            if self.using_default_params == False:
+                f = direction_dependent_index(self.v_file_dir)
+                index = f.combined_index(256)
+
         return hp.ud_grade(index,self.nside)
     
     def nan_helper(self,y):
@@ -157,7 +168,7 @@ class absorption_JRZ(object):
         diffuse_x = np.multiply(data_diffuse, (freq/data_freq)**index)
         value = self.I_E(freq)
         if self.output_absorp_free_skymap == True: 
-            with h5py.File('Index_'+'diffuse_'+str(freq)+'MHz.hdf5', 'w') as f:
+            with h5py.File(str(freq)+'MHz_absorp_free_skymap.hdf5', 'w') as f:
                 f.create_dataset('freq', data = freq)
                 f.create_dataset('nside',data = self.nside)
                 f.create_dataset('diffuse_x', data = diffuse_x)
@@ -234,7 +245,7 @@ class absorption_JRZ(object):
         return quad(fun_inte, 0, self.dist)[0]
     
     def Delt_T(self):
-        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,v_file_dir = self.v_file_dir)
+        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,input_spectral_index = self.input_spectral_index, v_file_dir = self.v_file_dir)
         params = g.params()
         abcz0 = params.copy()
         nside = self.nside
@@ -490,7 +501,7 @@ class absorption_JRZ(object):
             result_absorb = mpiutil.gather_list(result_absorb, root = None)
         if rank == 0:
             if self.critical_dis == True:
-                with h5py.File('critical_distance.hdf5','r') as f:
+                with h5py.File(str(self.v)+'MHz_critical_dist.hdf5','r') as f:
                     f.create_dataset('critical_distance',data = result_absorb[:,2])
             #if self.test == True:
             if False:
@@ -515,9 +526,17 @@ class absorption_JRZ(object):
                     pix_value = diffuse_raw_[pix_number] * mean_exptao + I_E*np.exp(-tao[-1])
                     result.append([pix_number,pix_value])
                     #print 'pixel_number',pix_number
-                with h5py.File('./' + str(self.emi_form)+str(self.v)+'MHz_global_spectrum_with_perterbation.hdf5','w') as h:
-                    h.create_dataset('result',data = result)
-                    #h.create_dataset('smooth_result',data = result_absorb)
+                with h5py.File('./' + str(self.emi_form)+str(self.v)+'MHz_sky_map_with_absorption.hdf5','w') as h:
+                    h.create_dataset('data',data = np.array(result)[:,1])
+                    if self.index_type == 'constant_index_minus_I_E':
+                        index = self.Beta_G_constant
+                        index = np.ones(12*self.nside*self.nside) * index
+                    if self.index_type == 'freq_dependence_index_minus_I_E':
+                        index = self.freq_dependence_index_minus_I_E(freq)
+                        index = np.ones(12*self.nside*self.nside) * index
+                    if self.index_type == 'pixel_dependence_index_minus_I_E':
+                        index = self.Beta_G
+                    h.create_dataset('spectral_index',data = index)
                     print ('end, good job!, you are the best')
 
             return result

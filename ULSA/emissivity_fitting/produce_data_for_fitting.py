@@ -8,12 +8,13 @@ import os
 #from ULSA.spectral_index_fitting.spectral_index_analysis_for_constant import reborn
 from ULSA.spectral_index_fitting.spectral_index_frequency_dependent import freq_dependent_index
 class smooth(object):
-    def __init__(self, nside, v, index_type,I_E_form,using_raw_diffuse,using_default_params,v_file_dir,beta_1 = 0.7,v_1 = 1.):
+    def __init__(self, nside, v, index_type,I_E_form,using_raw_diffuse,using_default_params,input_spectral_index=None, v_file_dir = None, beta_1 = 0.7,v_1 = 1.):
         self.nside = nside
         self.v = v
         self.index_type = index_type
         self.I_E_form = I_E_form
         self.using_raw_diffuse = using_raw_diffuse
+        self.input_spectral_index = input_spectral_index
         self.using_default_params = using_default_params
         self.beta_1 = beta_1
         self.v_1 = v_1
@@ -39,15 +40,17 @@ class smooth(object):
 
 
     def freq_dependence_index_minus_I_E(self,freq):
-        if self.using_default_params == True:
-            beta0 = -2.49
-            beta_1 = self.beta_1;v_1 = self.v_1
-            beta = beta0 + beta_1 * np.exp(-freq/v_1)
-        elif self.using_default_params == False:
-            f = freq_dependent_index(freq,self.beta_1,self.v_1,self.v_file_dir)
-            beta = f.calculate_index(self.nside)
-        else:
-            beta0, beta_1, v_1 = self.using_default_params
+        if self.input_spectral_index != None:
+            beta0, beta_1, v_1 = self.input_spectral_index[0],self.input_spectral_index[1],self.input_spectral_index[2]
+        if self.input_spectral_index == None:
+            if self.using_default_params == True:
+                beta0 = -2.49
+                beta_1 = self.beta_1;v_1 = self.v_1
+                beta = beta0 + beta_1 * np.exp(-freq/v_1)
+            if self.using_default_params == False:
+                f = freq_dependent_index(freq,self.beta_1,self.v_1,self.v_file_dir)
+                beta = f.calculate_index(self.nside)
+
         #beta_1 = self.beta_1;v_1 = self.v_1
             beta = beta0 + beta_1 * np.exp(-freq/v_1)
         index_ = beta
