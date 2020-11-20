@@ -40,7 +40,7 @@ dist = 50.
 
 class absorption_JRZ(object):
     
-    def __init__(self, v, nside, index_type, distance,using_raw_diffuse, v_file_dir=None, emi_form='exp',R0_R1_equal=True, using_default_params=True, input_spectral_index = None, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
+    def __init__(self, v, nside, index_type,using_raw_diffuse, distance = 50., v_file_dir=None, emi_form='exp',R0_R1_equal=True, using_default_params=True, input_spectral_index = None, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
         self.v = v
         self.nside = nside
         self.index_type = index_type
