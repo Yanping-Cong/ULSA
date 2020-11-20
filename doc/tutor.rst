@@ -17,21 +17,22 @@ After you sucessfully install the package of ULSA, one can simply do in ipython 
     >>> sky_map_in_healpix = f.mpi()
 
 This parameter is useful when you are using the fuction:
+  	* v (float): frequency in MHz for the output map;
+	* nside (int): the Healpix NSIDE value for the sky map;
+	* index_type (str): ('constant\_index\_minus\_I\_E', 'freq\_dependence\_index\_minus\_I\_E', 'pixel\_dependence\_index\_minus\_I\_E'), spectral index modeling option;
+	* distance kpc: maximum integration distance along line of sight, default is set to 50 kpc;
+	* using_raw_diffue (bool): If False, the data will be smoothed by Gaussian kernel, otherwise use the raw data;
+	* v_file_dir (dict):  a dictionary structure used to specify additional input map data. Specify the frequency of the map by the dictionary key, and the relative path of the map data as dictionary value. The  input sky map file should be in HDF5 format, such as \{XX:"/dir/xxx.hdf5"\}. If None, the spectral index is calculated with the existing data.
+	* using_default_params (bool): if the input is a bool type, use the default spectral index value in the code if it is set to True, or re-calculate the spectral index value if it is set to False.  
+	* input_spectral_index (array): one can specify the spectral index value by putting in an array containing the spectral index map in the direction dependent case or containing one element for constant or frequency dependent cases.}
+	* params_408 (list): The emissivity model parameters ($[A,R_0,\alpha,Z_1,\gamma]$) obtained by fitting at 408 MHz.  If this parameter is omitted, the values given in Table\ref{table_params} will be used as defaults. One can also specify these parameters directly by putting in the values, or force the code to re-fit by setting it to [0.,0.,0.,0.,0.] 
+	* critical_di (bool): if True, calculating the half brightness distance, otherwise this is not calculated. 
+	* output_absorp_free_skymap (bool): if True, output an addional absorption-free sky map at frequency {\bf v}.  
 
-  * v int: frequency in MHz of the output skymap. 
-  * nside int: the NSIDE decide the resolution of the skymap in healpix mode. 
-  * index_type str: ('constant_index_minus_I_E', 'freq_dependence_index_minus_I_E', 'pixel_dependence_index_minus_    I_E'), one of them can be choose as different model of spectral index.
-  * distance kpc: the max integrated distance for galaxy when considering the free-free absorption. 
-  * using_raw_diffue bool:  the input data for fitting parameter of emissivity, if True the data will be smoothed by Gaussian kernel. 
-  * v_file_dir None or dict: If None, calculating the spectral index with the existing data, otherwise enter a dictionary, the key of the dictionary corresponds to the frequency of the input sky map, and the value of the dictionary corresponds to the relative path of the input sky map file in HDF5 format, such as \{XX:"/dir/xxx.hdf5"\}
-  * using_default_params bool:  if True, using the default spectral index value, if False calculate the spectral index value with the code, otherwise, one can simply input the spectral index to variable of using default params. 
-  * params_408 list:  if the input of params 408 == [0.,0.,0.,0.,0.], the code will fit the parameters of emissivity in　408Mhz, or one can simply input the parameters of some other fitting result to params 408, By default, if you　do nothing, the code will take the default parameters.
-  * critical_dis bool: if True, calculating the half brightness distance, otherwise False.
-  * output_absorp_free_skymap bool:  if True, output the absorption free sky map at frequency v. 
 
 .. note::
 
-   where, the “v” indicates the frequency of the output sky map. Users can output sky map at different frequencies according to their needs, or use a loop to output sky map at a series of frequencies. By default, the output sky map coordinates are galactic coordinate system, users can convert to another coordinate system by the “change_coord” function, as described in the following example. The “nside” parameter controls the resolution of the output sky map. In general, the pixel number of the sky map is equal to 12 * nside * nside. The “clumping factor” amplify the free-free absorption effect, and in our final model it is appropriate to determine that the value of the clumping factor is 1.  “distance” is set to the galactic maximum integration scale, and in general, 50 kpc is the absorption scale that would be sufficient to cover the entire galaxy. The “using_raw_diffuse” parameter determines whether to smooth the data before fitting the emissivity function, emissivity is a smooth changed distribution with R and Z. The selection of data smoothing can better remove the negative effects of fitting caused by small-scale structure. The remaining parameters are the default parameters, we recommend using the default values, for developers, according to the above parameter description, can flexible to change parameter by they need.
+   where, the “v” indicates the frequency of the output sky map. Users can output sky map at different frequencies according to their needs, or use a loop to output sky map at a series of frequencies. By default, the output sky map coordinates are galactic coordinate system, users can convert to another coordinate system by the “change_coord” function, as described in the following example. The “nside” parameter controls the resolution of the output sky map. In general, the pixel number of the sky map is equal to 12 * nside * nside.  “distance” is set to the galactic maximum integration scale, and in general, 50 kpc is the absorption scale that would be sufficient to cover the entire galaxy. The “using_raw_diffuse” parameter determines whether to smooth the data before fitting the emissivity function, emissivity is a smooth changed distribution with R and Z. The selection of data smoothing can better remove the negative effects of fitting caused by small-scale structure. 
 
 Some examples for different need
 -------------------------------------
@@ -57,7 +58,7 @@ Change the coordinate of the output sky_map
 if one want to change the coordinate from 'Galactic' to other coordinate, one can simplely using function "change_coord"::
 
     >>> from ULSA.sky_map.produce_absorbed_sky_map import absorption_JRZ
-    >>> f = absorption_JRZ(v, nside, index_type, distance,using_raw_diffuse, using_default_params=True, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False)
+    >>> f = absorption_JRZ(v, nside, index_type, distance,using_raw_diffuse, using_default_params=True,input_spectral_index = None, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False)
     >>> sky_map_in_healpix = f.mpi()
     >>> f.change_coord(sky_map_in_healpix,["G","C"])
 
@@ -77,7 +78,7 @@ an example.py example for calculating constant spectral index condition is under
     $ for v in [1,10,1]:
     $     #nside in healpix mode
     $     nside = 2**6
-    $     f = absorption_JRZ(v = v, nside = nside, index_type = 'constant_index_minus_I_E', distance = dist,using_raw_diffuse = False,using_default_params=False,critical_dis = False,output_absorp_free_skymap = False)
+    $     f = absorption_JRZ(v = v, nside = nside, index_type = 'constant_index_minus_I_E', distance = dist,using_raw_diffuse = False,using_default_params=False,input_spectral_index = None, critical_dis = False,output_absorp_free_skymap = False)
     $     sky_map_list.append(f.mpi())
     $ # we got a list of sky_map with frequency from 1Mhz to 10Mhz with step 1Mhz.
     $ # then plot the data using mollview
