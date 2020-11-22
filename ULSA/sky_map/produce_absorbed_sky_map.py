@@ -368,7 +368,7 @@ class absorption_JRZ(object):
             v_1 = self.v_1
             beta0 = -2.58
             beta = beta0 + beta_1*np.exp(-v/v_1)
-            result = 1.2*(v*1e-3/1.0)**-2.58
+            result = 1.2*(v*1e-3/1.0)**beta
 
         return result
 
@@ -532,7 +532,7 @@ class absorption_JRZ(object):
                         index = self.Beta_G_constant
                         index = np.ones(12*self.nside*self.nside) * index
                     if self.index_type == 'freq_dependence_index_minus_I_E':
-                        index = self.freq_dependence_index_minus_I_E(freq)
+                        index = self.freq_dependence_index_minus_I_E(self.v)
                         index = np.ones(12*self.nside*self.nside) * index
                     if self.index_type == 'pixel_dependence_index_minus_I_E':
                         index = self.Beta_G
