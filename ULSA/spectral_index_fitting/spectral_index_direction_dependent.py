@@ -18,6 +18,7 @@ class direction_dependent_index(object):
         _path = os.path.dirname(os.path.abspath(__file__))
         _path = os.path.split(_path)[0]
         _path = os.path.split(_path)[0]
+        self.file_dir1 = _path +'/ULSA/spectral_index_fitting'
         self.v_file_dir = v_file_dir
         self.file_dir = _path +'/obs_sky_data'
     def unit(self,v):
@@ -64,22 +65,22 @@ class direction_dependent_index(object):
 
         with h5py.File(self.file_dir + '/Guzman/wlb_45MHz.hdf5','r') as h:
             hpmap_45_old = h['hpmap'][:]
-        hpmap_408 = hp.read_map(self.file_dir + '/Haslam/haslam408_dsds_Remazeilles2014.fits')
+        hpmap_408 = hp.read_map(self.file_dir + '/Haslam/haslam408_dsds_Remazeilles2014.fits',dtype = np.float64)
         #downgrade to 256 may be, and change the coordinate from galaxy to equatorial
         hpmap_408 = hp.ud_grade(hpmap_408,downgrade_to)
         hpmap_408 = self.change_coord(hpmap_408,['G', 'C'])
         
         #####
         #the data from LWA    
-        hpmap_35 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-35.fits')
-        hpmap_38 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-38.fits')
-        hpmap_40 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-40.fits')
-        hpmap_45 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-45.fits')
-        hpmap_50 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-50.fits')
-        hpmap_60 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-60.fits')
-        hpmap_70 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-70.fits')
-        hpmap_74 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-74.fits')
-        hpmap_80 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-80.fits')
+        hpmap_35 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-35.fits',dtype = np.float64)
+        hpmap_38 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-38.fits',dtype = np.float64)
+        hpmap_40 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-40.fits',dtype = np.float64)
+        hpmap_45 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-45.fits',dtype = np.float64)
+        hpmap_50 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-50.fits',dtype = np.float64)
+        hpmap_60 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-60.fits',dtype = np.float64)
+        hpmap_70 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-70.fits',dtype = np.float64)
+        hpmap_74 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-74.fits',dtype = np.float64)
+        hpmap_80 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-80.fits',dtype = np.float64)
        
         return hpmap_408,hpmap_45_old,hpmap_35,hpmap_38,hpmap_40,hpmap_45,hpmap_50,hpmap_60,hpmap_70,hpmap_74,hpmap_80
 
@@ -131,7 +132,6 @@ class direction_dependent_index(object):
 
             X = hp.ud_grade(X,downgrade_to)
             if key == 'hpmap_35':
-                print (np.where(nans)[0].shape,'smoothing_data:np.where(nans)[0].shape')
                 Mask_missing_region_lwa = nans.copy()
                 Mask_missing_region_lwa = hp.ud_grade(Mask_missing_region_lwa,downgrade_to)
                 
@@ -277,8 +277,14 @@ class direction_dependent_index(object):
             new_map.append(pix_value)
         new_map = np.array(new_map)
         new_map = self.change_coord(new_map,['C','G'])
-        with h5py.File('spectral_index_map.hdf5','w') as f:
-            f.create_dataset('spectral_index',data = new_map)
+        #with h5py.File(self.file_dir1 + '/spectral_index_map.hdf5','w') as f:
+        #    f['spectral_index'] = new_map
+        #    f.close()
+
+        #f1 = h5py.File(self.file_dir + '/spectral_index_map.hdf5', 'r+') # open the file
+        #data = f1['spectral_index']       # load the data
+        #data[...] = new_map               # assign new values to data
+        #f1.close()       
         return new_map    
         
     def index_between_45_and_408(self,map_45_old,map_408):

@@ -38,6 +38,8 @@ libNE2001 = ct.CDLL('/public/home/wufq/congyanping/Software/NE2001_4python/src.N
 dist = 50.
 
 
+rank = mpiutil.rank
+size = mpiutil.size
 class absorption_JRZ(object):
     
     def __init__(self, v, nside, index_type,using_raw_diffuse, distance = 50., v_file_dir=None, emi_form='exp',R0_R1_equal=True, using_default_params=True, input_spectral_index = None, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
@@ -67,7 +69,12 @@ class absorption_JRZ(object):
             self.Beta_G_constant = self.constant_index_minus_I_E()
         if self.index_type == 'pixel_dependence_index_minus_I_E':
             self.I_E_form = 'seiffert'
-            self.Beta_G = self.pixel_dependence_index_minus_I_E()
+            if rank == 0:
+                self.Beta_G = self.pixel_dependence_index_minus_I_E()
+            else:
+                self.Beta_G = None
+            self.Beta_G = mpiutil.bcast(self.Beta_G, root = 0)
+            
         if self.index_type == 'freq_dependence_index_minus_I_E':
             self.I_E_form = 'seiffert_freq_depend'
 
@@ -267,7 +274,10 @@ class absorption_JRZ(object):
             
 
             b = time.time()
-
+        with h5py.File(str(self.v)+'m.hdf5','w') as f:
+            f.create_dataset('m',data = m)
+            f.close()
+            
         diffuse_raw = self.diffuse_x(self.v) 
         delt_m = diffuse_raw + I_E - m
         return params,delt_m,diffuse_raw,m
