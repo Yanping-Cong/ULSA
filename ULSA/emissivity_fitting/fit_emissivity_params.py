@@ -79,7 +79,7 @@ class free_free(object):
             #params, pcov = optimize.curve_fit(func, xyz[:,:2], xyz[:,2], guess, bounds=(np.array([0,1e-5,-3.1,1e-5,-3.1]),np.array([1e10,100,3.1,20,3.1])), method='trf')
             beta_ = -2.49 + 0.7 * np.exp(-self.v/1.0)
             A_upper_limit = 10* 15 * (self.v/408.)**beta_
-            #print 'A_upper_limit',A_upper_limit
+            print 'A_upper_limit',A_upper_limit
             params, pcov = optimize.curve_fit(func, xyz[:,:2], xyz[:,2], guess, bounds=(np.array([0,1e-5,1e-5,1e-5,1e-5]),np.array([A_upper_limit,5,3.1,2,3.1])), method='trf')
 
         with h5py.File(str(self.v)+'Mhz_fitted_param.hdf5','w') as f:
