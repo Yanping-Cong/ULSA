@@ -2,7 +2,7 @@
 
 ## Ultra Long wavelength Sky model with Absorption(ULSA)
 --------
-The LFSM implementation of the NE2001 electron model using in 3D emissivity of galaxy.
+The LFSM implementation of the NE2001 electron model using in 3D emissivity of galaxy to produce a sky map below 10MHz.
 
 The output can be stored either in memory by means of a numpy array, or in a HDF5 format file.
 
