@@ -104,7 +104,11 @@ class free_free(object):
                 abcz0 = self.params_408
 
         if self.index_type == 'freq_dependence_index_minus_I_E':
-            abcz0 = self.curve_fit()
+            try:
+                with h5py.File(str(self.v)+'Mhz_fitted_param.hdf5','r') as g:
+                    abcz0 = g['params'][:]
+            except:
+                abcz0 = self.curve_fit()
         return abcz0
 
 

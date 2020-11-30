@@ -104,7 +104,7 @@ class absorption_JRZ(object):
                 beta = beta0 + beta_1 * np.exp(-freq/v_1)
             if self.using_default_params == False:
                 f = freq_dependent_index(freq, self.beta_1, self.v_1,self.v_file_dir)
-                beta = f.calculate_index(self.nside)
+                beta0 = f.calculate_index(self.nside)
                 #beta_1 = self.beta_1;v_1 = self.v_1
                 beta = beta0 + beta_1 * np.exp(-freq/v_1)
         index_ = beta
