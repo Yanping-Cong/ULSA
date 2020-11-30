@@ -20,5 +20,5 @@ There are an example in ./example, one can simpyly go to the dir and run test.py
 ## Documentation
 Documentation can be found at <https://ulsa.readthedocs.io/en/latest/>.
 
-## warning
-If this code helps you, please refer to the article below, or contact me by email and I will send you a link to the article
+## Warning
+If this code helps you, please refer to the article below, or contact me by email and I will send you a link to the article ypcong@bao.ac.cn
