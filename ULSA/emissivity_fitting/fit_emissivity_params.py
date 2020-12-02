@@ -20,7 +20,7 @@ from ULSA.emissivity_fitting.produce_data_for_fitting import smooth
 #from Params.interpolate_sky.interpolate_sky_map import produce_index
 class free_free(object):
 
-    def __init__(self, v, nside, index_type, dist, using_raw_diffuse,using_default_params,input_spectral_index=None,v_file_dir=None,params_408=np.array([71.19, 4.23, 0.03, 0.47, 0.77])
+    def __init__(self, v, nside, index_type, dist, using_raw_diffuse,using_default_params,input_spectral_index=None,v_file_dir=None,emi_form = 'exp',params_408=np.array([71.19, 4.23, 0.03, 0.47, 0.77])
 ):
         self.v = v#20Mhz frequency in hz
         self.nside = nside       
@@ -32,7 +32,7 @@ class free_free(object):
             self.I_E_form = 'seiffert'
         if self.index_type == 'freq_dependence_index_minus_I_E':
             self.I_E_form = 'seiffert_freq_depend' 
-        self.emi_form = 'exp'
+        self.emi_form =  emi_form
         self.R0_R1_equal = True
         self.input_spectral_index = input_spectral_index
         self.v_file_dir = v_file_dir
@@ -46,6 +46,8 @@ class free_free(object):
         result = smooth(self.nside,self.v, self.index_type,self.I_E_form,self.using_raw_diffuse, self.using_default_params, self.input_spectral_index, self.v_file_dir).add_5()
         return result
 
+    def sech2(self,x):
+        return np.square(2/(np.exp(x) + np.exp(-x)))
 
     def fun_for_curvefit_R0R2(self, xyz, A_v, R_0, alpha, Z_0, gamma, R_2 = 0.1):
         #produce for input for curve_fit
@@ -59,7 +61,11 @@ class free_free(object):
             def fun_inte(r):
                 R = np.sqrt(8.5**2 + (r*np.cos(self.b))**2 -2*8.5*(r*np.cos(self.b))*np.cos(self.l))
                 Z = r * np.sin(self.b)
-                emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_0)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)
+                if self.emi_form == 'exp':
+                    emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_0)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)
+                if self.emi_form == 'sech':
+                    emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_0)**beta) * self.sech2(-(np.abs(Z)/Z_0)**gamma)
+
                 #get rid of square 
                 return emissivity
 
@@ -75,8 +81,6 @@ class free_free(object):
             func = self.fun_for_curvefit_R0R2
             xyz = self.produce_xyz()
             #print 'xyz.shape',xyz.shape
-            #params, pcov = optimize.curve_fit(func, xyz[:,:2], xyz[:,2], guess,sigma = xyz[:,2], bounds=(np.array([0,1e-5,-3.1,1e-5,-3.1]),np.array([1e10,100,3.1,20,3.1])), method='trf')
-            #params, pcov = optimize.curve_fit(func, xyz[:,:2], xyz[:,2], guess, bounds=(np.array([0,1e-5,-3.1,1e-5,-3.1]),np.array([1e10,100,3.1,20,3.1])), method='trf')
             beta_ = -2.49 + 0.7 * np.exp(-self.v/1.0)
             A_upper_limit = 10* 15 * (self.v/408.)**beta_
             print 'A_upper_limit',A_upper_limit
@@ -89,7 +93,7 @@ class free_free(object):
         return params
  
     def params(self):
-        if self.index_type == 'constant_index_minus_I_E' or 'pixel_dependence_index_minus_I_E':
+        if self.index_type == 'constant_index_minus_I_E' or 'pixel_dependence_index_minus_I_E' or 'freq_dependence_index_minus_I_E':
 
             if self.params_408.all() == 0 or 0.:
                 try:
@@ -99,16 +103,10 @@ class free_free(object):
                     if int(self.v) == int(408):
                         abcz0 = self.curve_fit()
                     else:
-                        raise 'fitting params must at frequency of 408MHz for constant and pixel dependence spectral index situation'
+                        raise 'fitting params must at frequency of 408MHz for constant ,pixel dependent and freq dependent spectral index situation'
             else:
                 abcz0 = self.params_408
 
-        if self.index_type == 'freq_dependence_index_minus_I_E':
-            try:
-                with h5py.File(str(self.v)+'Mhz_fitted_param.hdf5','r') as g:
-                    abcz0 = g['params'][:]
-            except:
-                abcz0 = self.curve_fit()
         return abcz0
 
 

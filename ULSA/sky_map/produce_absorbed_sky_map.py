@@ -66,7 +66,12 @@ class absorption_JRZ(object):
         self.file_dir1 = _path +'/ULSA/spectral_index_fitting'
         if self.index_type == 'constant_index_minus_I_E':
             self.I_E_form = 'seiffert'
-            self.Beta_G_constant = self.constant_index_minus_I_E()
+            if rank == 0:
+
+                self.Beta_G_constant = self.constant_index_minus_I_E()
+            else:
+                self.Beta_G_constant = None
+            self.Beta_G_constant = mpiutil.bcast(self.Beta_G_constant, root = 0)
         if self.index_type == 'pixel_dependence_index_minus_I_E':
             self.I_E_form = 'seiffert'
             if rank == 0:
@@ -77,6 +82,11 @@ class absorption_JRZ(object):
             
         if self.index_type == 'freq_dependence_index_minus_I_E':
             self.I_E_form = 'seiffert_freq_depend'
+            if rank == 0:
+                self.Beta_G_freq = self.freq_dependence_index_minus_I_E(self.v)
+            else:
+                self.Beta_G_freq = None
+            self.Beta_G_freq = mpiutil.bcast(self.Beta_G_freq, root = 0)
 
 
 
@@ -91,12 +101,13 @@ class absorption_JRZ(object):
                 beta = f.calculate_index(self.nside)
 
         #beta = float(-2.4894)
-        index_ = np.array(12*self.nside**2 * [beta])
+        index_ = np.ones(12*self.nside**2) * beta
         return index_
 
     def freq_dependence_index_minus_I_E(self,freq):
         if self.input_spectral_index != None:
             beta0, beta_1, v_1 = self.input_spectral_index[0],self.input_spectral_index[1],self.input_spectral_index[2]
+            beta = beta0 + beta_1 * np.exp(-freq/v_1)
         if self.input_spectral_index == None:
             if self.using_default_params == True:
                 beta0 = -2.49
@@ -107,7 +118,8 @@ class absorption_JRZ(object):
                 beta0 = f.calculate_index(self.nside)
                 beta_1 = self.beta_1;v_1 = self.v_1
                 beta = beta0 + beta_1 * np.exp(-freq/v_1)
-        index_ = beta
+        index_ = np.ones(12*self.nside**2) * beta
+        print ('index',index_,index_.shape)
         return index_
 
     def pixel_dependence_index_minus_I_E(self):
@@ -188,24 +200,18 @@ class absorption_JRZ(object):
 
         self.l = l * np.pi / 180.0
         self.b = b * np.pi /180.0
-        if self.R0_R1_equal == False:
-
-            A_v, R_0, alpha, R_1, beta, Z_0, gamma = abcz0
-            R_2 = 0
-        if self.R0_R1_equal == True:
-            #A_v, R_0, alpha, Z_0, gamma = abcz0
-            #R_1 = R_0.copy()
-            #beta = 1
-            A_v, R_0,alpha, Z_0, gamma = abcz0
-            R_1 = R_0.copy()
-            R_2 = R_2
-            beta = 1
+        A_v, R_0,alpha, Z_0, gamma = abcz0
+        R_1 = R_0.copy()
+        R_2 = R_2
+        beta = 1
+        Beta_G = self.Beta_G_freq
         def fun_inte(r):
 
             #integrate along the sight direction
             R = np.sqrt(8.5**2 + (r*np.cos(self.b))**2 -2*8.5*(r*np.cos(self.b))*np.cos(self.l))
             Z = r * np.sin(self.b)
-            emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)
+            emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**Beta_G[0]
+
             #get rid of square 
             return emissivity 
 
@@ -252,7 +258,7 @@ class absorption_JRZ(object):
         return quad(fun_inte, 0, self.dist)[0]
     
     def Delt_T(self):
-        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,input_spectral_index = self.input_spectral_index, v_file_dir = self.v_file_dir)
+        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,input_spectral_index = self.input_spectral_index, v_file_dir = self.v_file_dir, emi_form = self.emi_form)
         params = g.params()
         abcz0 = params.copy()
         nside = self.nside
@@ -265,10 +271,10 @@ class absorption_JRZ(object):
             a = time.time()
             if self.index_type == 'pixel_dependence_index_minus_I_E':
                 pix_value = self.model_m4(l,b,abcz0,pix_number) + I_E
-            elif self.index_type == 'constant_index_minus_I_E':
+            if self.index_type == 'constant_index_minus_I_E':
                 pix_value = self.model_m5(l,b,abcz0) + I_E
                     
-            else: 
+            if self.index_type == 'freq_dependence_index_minus_I_E': 
                 pix_value = self.model_m2(l,b,abcz0) + I_E
             m[pix_number] = pix_value
             
@@ -420,23 +426,32 @@ class absorption_JRZ(object):
         #emissivity = A_v * (R/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)
         if self.index_type == 'pixel_dependence_index_minus_I_E':
             pix_number = hp.ang2pix(self.nside, l, b, lonlat = True)
-            emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G[pix_number]
-        elif self.index_type == 'constant_index_minus_I_E':
+            if self.emi_form == 'exp':
+
+                emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G[pix_number]
+            if self.emi_form == 'sech2':
+                emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * self.sech2(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G[pix_number]
+
+        if self.index_type == 'constant_index_minus_I_E':
             if int(self.v) == int(408):
                 if self.emi_form == 'exp':
                     emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)
                 if self.emi_form == 'sech2':
                     emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * self.sech2(-(np.abs(Z)/Z_0)**gamma)
             else:
-                emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G_constant[0]
+                if self.emi_form == 'exp':
+
+                    emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G_constant[0]
+                if self.emi_form == 'sech2':
+                    emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * self.sech2(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G_constant[0]
              
-        else:
+        if self.index_type == 'freq_dependence_index_minus_I_E':
             if self.emi_form == 'exp':
 
-                emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)
+                emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G_freq[0]
             if self.emi_form == 'sech2':
                     
-                emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * self.sech2(-(np.abs(Z)/Z_0)**gamma)
+                emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * self.sech2(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G_freq[0]
         j_RZ = emissivity #+ delt_m/dist) #* np.exp(-tao[index])
         return j_RZ
 
@@ -542,7 +557,7 @@ class absorption_JRZ(object):
                         index = self.Beta_G_constant
                         index = np.ones(12*self.nside*self.nside) * index
                     if self.index_type == 'freq_dependence_index_minus_I_E':
-                        index = self.freq_dependence_index_minus_I_E(self.v)
+                        index = self.Beta_G_freq
                         index = np.ones(12*self.nside*self.nside) * index
                     if self.index_type == 'pixel_dependence_index_minus_I_E':
                         index = self.Beta_G
