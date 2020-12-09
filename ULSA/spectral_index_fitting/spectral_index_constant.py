@@ -176,7 +176,7 @@ class constant_index(object):
         Dict,Mask_missing_region_lwa = self.smoothing_data(downgrade_to)
         #print 'in calculate index'
         hpmap_408, hpmap_45_old,hpmap_35,hpmap_38,hpmap_40,hpmap_45,hpmap_50,hpmap_60,hpmap_70,hpmap_74,hpmap_80 = Dict['hpmap_408'],Dict['hpmap_45_old'],Dict['hpmap_35'],Dict['hpmap_38'],Dict['hpmap_40'],Dict['hpmap_45'],Dict['hpmap_50'],Dict['hpmap_60'],Dict['hpmap_70'],Dict['hpmap_74'],Dict['hpmap_80']
-        print 'mean(408-I_E(408)',np.mean(hpmap_408-self.I_E(408))  
+        #print 'mean(408-I_E(408)',np.mean(hpmap_408-self.I_E(408))  
         #hpmap_408, hpmap_45_old,hpmap_35,hpmap_38,hpmap_40,hpmap_45,hpmap_50,hpmap_60,hpmap_70,hpmap_74,hpmap_80 = self.read_file()
         hpmap_40 = self.change_coord(hpmap_40,['G','C'])
         hpmap_45 = self.change_coord(hpmap_45,['G','C'])
