@@ -309,7 +309,7 @@ class absorption_JRZ(object):
 
         l_rad = l / rad #now its radian unit
         b_rad = b / rad
-        _ = libNE2001.dmdsm1_(nd, ct.pointer( ct.c_float(l_rad) ), ct.pointer( ct.c_float(b_rad) ), ct.pointer( ct.c_float(dist) ), np.ctypeslib.as_ctypes(em1D))
+        _ = libNE2001.em_los_(nd, ct.pointer( ct.c_float(l_rad) ), ct.pointer( ct.c_float(b_rad) ), ct.pointer( ct.c_float(dist) ), np.ctypeslib.as_ctypes(em1D))
         #EM = pyne2001.get_dm_full(l, b, r)['EM']	
         Tao_mw = 3.28*1e-7 * (Te/1e4)**-1.35 * (v * 1e-9)**-2.1 * em1D
         #print 'Tao_mw',Tao_mw 
