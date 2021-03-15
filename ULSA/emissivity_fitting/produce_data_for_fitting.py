@@ -67,10 +67,10 @@ class smooth(object):
         
         nans, x= self.nan_helper(data_diffuse)
         data_diffuse[nans]= np.interp(x(nans), x(~nans), data_diffuse[~nans])
-        if self.index_type == 'constant_index_minus_I_E' or 'pixel_dependence_index_minus_I_E':
+        if self.index_type == 'constant_index' or 'direction_dependent_index':
 
             diffuse_x = data_diffuse - self.I_E(data_freq)
-        if self.index_type == 'freq_dependence_index_minus_I_E':
+        if self.index_type == 'freq_dependent_index':
             _index = self.freq_dependence_index_minus_I_E(self.v)
             data_diffuse = data_diffuse - self.I_E(data_freq)
             diffuse_x = np.multiply(data_diffuse, (self.v/data_freq)**_index)

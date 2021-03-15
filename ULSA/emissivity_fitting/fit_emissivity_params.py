@@ -26,11 +26,11 @@ class free_free(object):
         self.nside = nside       
         self.index_type = index_type
         self.dist = dist
-        if self.index_type == 'constant_index_minus_I_E':
+        if self.index_type == 'constant_index':
             self.I_E_form = 'seiffert'
-        if self.index_type == 'pixel_dependence_index_minus_I_E':
+        if self.index_type == 'direction_dependent_index':
             self.I_E_form = 'seiffert'
-        if self.index_type == 'freq_dependence_index_minus_I_E':
+        if self.index_type == 'freq_dependent_index':
             self.I_E_form = 'seiffert_freq_depend' 
         self.emi_form =  emi_form
         self.R0_R1_equal = True
@@ -83,7 +83,7 @@ class free_free(object):
             #print 'xyz.shape',xyz.shape
             beta_ = -2.49 + 0.7 * np.exp(-self.v/1.0)
             A_upper_limit = 10* 15 * (self.v/408.)**beta_
-            #print 'A_upper_limit',A_upper_limit
+            print 'A_upper_limit',A_upper_limit
             params, pcov = optimize.curve_fit(func, xyz[:,:2], xyz[:,2], guess, bounds=(np.array([0,1e-5,1e-5,1e-5,1e-5]),np.array([A_upper_limit,5,3.1,2,3.1])), method='trf')
 
         with h5py.File(str(self.v)+'Mhz_fitted_param.hdf5','w') as f:
@@ -93,7 +93,7 @@ class free_free(object):
         return params
  
     def params(self):
-        if self.index_type == 'constant_index_minus_I_E' or 'pixel_dependence_index_minus_I_E' or 'freq_dependence_index_minus_I_E':
+        if self.index_type == 'constant_index' or 'direction_dependent_index' or 'freq_dependent_index':
 
             if self.params_408.all() == 0 or 0.:
                 try:
