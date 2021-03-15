@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+print ('Version-0.8')
 import scipy
 import h5py
 from astropy.io import fits
@@ -64,7 +64,7 @@ class absorption_JRZ(object):
         self.v_1 = v_1
         self.file_dir2 = _path +'/obs_sky_data'
         self.file_dir1 = _path +'/ULSA/spectral_index_fitting'
-        if self.index_type == 'constant_index_minus_I_E':
+        if self.index_type == 'constant_index':
             self.I_E_form = 'seiffert'
             if rank == 0:
 
@@ -72,7 +72,7 @@ class absorption_JRZ(object):
             else:
                 self.Beta_G_constant = None
             self.Beta_G_constant = mpiutil.bcast(self.Beta_G_constant, root = 0)
-        if self.index_type == 'pixel_dependence_index_minus_I_E':
+        if self.index_type == 'direction_dependent_index':
             self.I_E_form = 'seiffert'
             if rank == 0:
                 self.Beta_G = self.pixel_dependence_index_minus_I_E()
@@ -80,7 +80,7 @@ class absorption_JRZ(object):
                 self.Beta_G = None
             self.Beta_G = mpiutil.bcast(self.Beta_G, root = 0)
             
-        if self.index_type == 'freq_dependence_index_minus_I_E':
+        if self.index_type == 'freq_dependent_index':
             self.I_E_form = 'seiffert_freq_depend'
             if rank == 0:
                 self.Beta_G_freq = self.freq_dependence_index_minus_I_E(self.v)
@@ -119,7 +119,7 @@ class absorption_JRZ(object):
                 beta_1 = self.beta_1;v_1 = self.v_1
                 beta = beta0 + beta_1 * np.exp(-freq/v_1)
         index_ = np.ones(12*self.nside**2) * beta
-        print ('index',index_,index_.shape)
+        #print ('index',index_,index_.shape)
         return index_
 
     def pixel_dependence_index_minus_I_E(self):
@@ -159,13 +159,13 @@ class absorption_JRZ(object):
  
     def diffuse_x(self, freq):
 
-        if self.index_type == 'constant_index_minus_I_E':
+        if self.index_type == 'constant_index':
             #index = self.constant_index_minus_I_E()
             index = self.Beta_G_constant 
-        if self.index_type == 'freq_dependence_index_minus_I_E':
+        if self.index_type == 'freq_dependent_index':
             index = self.freq_dependence_index_minus_I_E(freq)
 
-        if self.index_type == 'pixel_dependence_index_minus_I_E':
+        if self.index_type == 'direction_dependent_index':
             #index = self.pixel_dependence_index_minus_I_E()
             index = self.Beta_G 
 
@@ -269,12 +269,12 @@ class absorption_JRZ(object):
             l,b = hp.pixelfunc.pix2ang(nside, pix_number, nest = False, lonlat = True)
             #the emissivity after absorption and plus the term of extragalaxy
             a = time.time()
-            if self.index_type == 'pixel_dependence_index_minus_I_E':
+            if self.index_type == 'direction_dependent_index':
                 pix_value = self.model_m4(l,b,abcz0,pix_number) + I_E
-            if self.index_type == 'constant_index_minus_I_E':
+            if self.index_type == 'constant_index':
                 pix_value = self.model_m5(l,b,abcz0) + I_E
                     
-            if self.index_type == 'freq_dependence_index_minus_I_E': 
+            if self.index_type == 'freq_dependent_index': 
                 pix_value = self.model_m2(l,b,abcz0) + I_E
             m[pix_number] = pix_value
             
@@ -290,6 +290,7 @@ class absorption_JRZ(object):
 
     def Fortran2Py_optical_deepth(self, l, b, Te = 8000):
         v = self.v * 1e6 #v in MHz
+        v = float(v)
         rad=57.2957795
         #radian per degree
         #distance equals 50kpc
@@ -332,7 +333,8 @@ class absorption_JRZ(object):
         I_E = self.I_E(self.v)
 
         while i <= b:
-            index_ = np.int(i / step - 1)
+            #index_ = np.int(i / step - 1)
+            index_ = np.int(i / step) - 1
             s += (f(i,args[0],args[1],args[2],args[3]) * np.exp(-tao[index_])) * dx
             i += dx
         #here find the bug
@@ -424,7 +426,7 @@ class absorption_JRZ(object):
 
         ########ne = (R/(R_0+0.1))**alpha * a * np.exp(-np.abs(Z) * 2/(B+0.1) - 2*(r_1/(20*c + 0.1))**2) + D
         #emissivity = A_v * (R/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)
-        if self.index_type == 'pixel_dependence_index_minus_I_E':
+        if self.index_type == 'direction_dependent_index':
             pix_number = hp.ang2pix(self.nside, l, b, lonlat = True)
             if self.emi_form == 'exp':
 
@@ -432,7 +434,7 @@ class absorption_JRZ(object):
             if self.emi_form == 'sech2':
                 emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * self.sech2(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G[pix_number]
 
-        if self.index_type == 'constant_index_minus_I_E':
+        if self.index_type == 'constant_index':
             if int(self.v) == int(408):
                 if self.emi_form == 'exp':
                     emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)
@@ -445,7 +447,7 @@ class absorption_JRZ(object):
                 if self.emi_form == 'sech2':
                     emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * self.sech2(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G_constant[0]
              
-        if self.index_type == 'freq_dependence_index_minus_I_E':
+        if self.index_type == 'freq_dependent_index':
             if self.emi_form == 'exp':
 
                 emissivity = A_v * ((R+R_2)/R_0)**alpha * np.exp(-(R/R_1)**beta) * np.exp(-(np.abs(Z)/Z_0)**gamma)*(self.v/408.)**self.Beta_G_freq[0]
@@ -553,15 +555,16 @@ class absorption_JRZ(object):
                     #print 'pixel_number',pix_number
                 with h5py.File('./' + str(self.emi_form)+str(self.v)+'MHz_sky_map_with_absorption.hdf5','w') as h:
                     h.create_dataset('data',data = np.array(result)[:,1])
-                    if self.index_type == 'constant_index_minus_I_E':
+                    if self.index_type == 'constant_index':
                         index = self.Beta_G_constant
                         index = np.ones(12*self.nside*self.nside) * index
-                    if self.index_type == 'freq_dependence_index_minus_I_E':
+                    if self.index_type == 'freq_dependent_index':
                         index = self.Beta_G_freq
                         index = np.ones(12*self.nside*self.nside) * index
-                    if self.index_type == 'pixel_dependence_index_minus_I_E':
+                    if self.index_type == 'direction_dependent_index':
                         index = self.Beta_G
                     h.create_dataset('spectral_index',data = index)
+                    h.create_dataset('smooth_absorb',data = absorb)
                     print ('end, good job!, you are the best')
 
             return result
