@@ -258,7 +258,7 @@ class absorption_JRZ(object):
         return quad(fun_inte, 0, self.dist)[0]
     
     def Delt_T(self):
-        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,input_spectral_index = self.input_spectral_index, v_file_dir = self.v_file_dir, emi_form = self.emi_form)
+        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,input_spectral_index = self.input_spectral_index, v_file_dir = self.v_file_dir, emi_form = self.emi_form, params_408 = self.params_408)
         params = g.params()
         abcz0 = params.copy()
         nside = self.nside
