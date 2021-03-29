@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
-print ('Version-0.8')
+print ('Version-0.9,separate free-free and synchrotron emission.')
+import matplotlib
+matplotlib.use('Agg')
 import scipy
 import h5py
 from astropy.io import fits
@@ -27,6 +29,7 @@ from ULSA.emissivity_fitting.fit_emissivity_params import free_free
 from ULSA.spectral_index_fitting.spectral_index_constant import constant_index
 from ULSA.spectral_index_fitting.spectral_index_frequency_dependent import freq_dependent_index
 from ULSA.spectral_index_fitting.spectral_index_direction_dependent import direction_dependent_index
+from ULSA.emissivity_fitting.produce_data_for_fitting import smooth
 import ctypes as ct
 import numpy as np
 import os
@@ -42,7 +45,7 @@ rank = mpiutil.rank
 size = mpiutil.size
 class absorption_JRZ(object):
     
-    def __init__(self, v, nside, index_type,using_raw_diffuse, distance = 50., v_file_dir=None, emi_form='exp',R0_R1_equal=True, using_default_params=True, input_spectral_index = None, params_408 = np.array([71.19, 4.23, 0.03, 0.47, 0.77]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
+    def __init__(self, v, nside, index_type,using_raw_diffuse, distance = 50., v_file_dir=None, emi_form='exp',R0_R1_equal=True, using_default_params=True, input_spectral_index = None, params_408 = np.array([43.09932087,3.40820378,0.46230938,1.11894379,1.2344227]),critical_dis=False,output_absorp_free_skymap=False,beta_1=0.7,v_1 = 1.0):
         self.v = v
         self.nside = nside
         self.index_type = index_type
@@ -60,6 +63,7 @@ class absorption_JRZ(object):
         _path = os.path.dirname(os.path.abspath(__file__))
         _path = os.path.split(_path)[0]
         _path = os.path.split(_path)[0]
+        self.file_dir = _path +'/obs_sky_data'
         self.beta_1 = beta_1
         self.v_1 = v_1
         self.file_dir2 = _path +'/obs_sky_data'
@@ -95,7 +99,7 @@ class absorption_JRZ(object):
             beta = self.input_spectral_index[0]
         if self.input_spectral_index == None:
             if self.using_default_params == True:
-                beta = -2.49
+                beta = -2.51
             if self.using_default_params == False:
                 f = constant_index(self.v_file_dir)
                 beta = f.calculate_index(self.nside)
@@ -110,7 +114,7 @@ class absorption_JRZ(object):
             beta = beta0 + beta_1 * np.exp(-freq/v_1)
         if self.input_spectral_index == None:
             if self.using_default_params == True:
-                beta0 = -2.49
+                beta0 = -2.51
                 beta_1 = self.beta_1;v_1 = self.v_1
                 beta = beta0 + beta_1 * np.exp(-freq/v_1)
             if self.using_default_params == False:
@@ -137,7 +141,9 @@ class absorption_JRZ(object):
             if self.using_default_params == False:
                 f = direction_dependent_index(self.v_file_dir)
                 index = f.combined_index(256)
-
+                plt.figure(1)
+                hp.mollview(index,cmap = plt.cm.jet)
+                plt.savefig('index_nside_256.png',ppi=600) 
         return hp.ud_grade(index,self.nside)
     
     def nan_helper(self,y):
@@ -156,7 +162,24 @@ class absorption_JRZ(object):
         """
 
         return np.isnan(y), lambda z: z.nonzero()[0]
+
+    def masked_smoothing(self, U, rad=56/60.):
+        V=U.copy()
+        V[U!=U]=0
+        VV=hp.smoothing(V, fwhm=np.radians(rad))
+        W=0*U.copy()+1
+        W[U!=U]=0
+        WW=hp.smoothing(W, fwhm=np.radians(rad))
+        return VV/WW
  
+    def free_free_408(self):
+        #in galactic coordinate
+        with h5py.File(self.file_dir + '/Free_free_emission/T_ff_nu_408MHz.hdf5','r') as f:
+            free_free_G = f['free_free'][:]
+        free_free_G = self.masked_smoothing(free_free_G,56/60.)
+        free_free_G = hp.ud_grade(free_free_G,self.nside)
+        return free_free_G
+
     def diffuse_x(self, freq):
 
         if self.index_type == 'constant_index':
@@ -176,15 +199,28 @@ class absorption_JRZ(object):
 
         ##the based data of 408MHz coming from HS14 data set
         data_diffuse = hp.read_map(self.file_dir2 + '/Haslam/haslam408_dsds_Remazeilles2014.fits')
-        data_diffuse = hp.ud_grade(data_diffuse, self.nside) 
-        Mask = np.where(data_diffuse -self.I_E(data_freq) <0)[0]
+        #free free having higher resolution, so free_free_408 function have smoothed the skymap to 56 arcmin
+        #first ud_grade otherwise too many minus value
+        data_diffuse = hp.ud_grade(data_diffuse, self.nside)
+
+        Mask = np.where(data_diffuse - self.free_free_408() - self.I_E(data_freq) <0)[0]
         data_diffuse[Mask] = np.nan
-        
         nans, x= self.nan_helper(data_diffuse)
         data_diffuse[nans]= np.interp(x(nans), x(~nans), data_diffuse[~nans])
 
-        data_diffuse = data_diffuse - self.I_E(data_freq)
+
+        data_diffuse = data_diffuse - self.free_free_408() - self.I_E(data_freq)
+        #smooth 408MHz map, 408 is 56 arcmin is the lowest resolution no need to smooth
+        #data_diffuse = self.masked_smoothing(data_diffuse)
+ 
+        Mask = np.where(data_diffuse <0)[0]
+        data_diffuse[Mask] = np.nan
+        nans, x= self.nan_helper(data_diffuse)
+        data_diffuse[nans]= np.interp(x(nans), x(~nans), data_diffuse[~nans])
+        
+
         diffuse_x = np.multiply(data_diffuse, (freq/data_freq)**index)
+
         value = self.I_E(freq)
         if self.output_absorp_free_skymap == True: 
             with h5py.File(str(freq)+'MHz_absorp_free_skymap.hdf5', 'w') as f:
@@ -258,7 +294,7 @@ class absorption_JRZ(object):
         return quad(fun_inte, 0, self.dist)[0]
     
     def Delt_T(self):
-        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,input_spectral_index = self.input_spectral_index, v_file_dir = self.v_file_dir, emi_form = self.emi_form, params_408 = self.params_408)
+        g = free_free(v = self.v, nside = self.nside,index_type = self.index_type,dist = self.dist,using_raw_diffuse = self.using_raw_diffuse,using_default_params = self.using_default_params,input_spectral_index = self.input_spectral_index, v_file_dir = self.v_file_dir, emi_form = self.emi_form,params_408=self.params_408)
         params = g.params()
         abcz0 = params.copy()
         nside = self.nside
@@ -280,12 +316,14 @@ class absorption_JRZ(object):
             
 
             b = time.time()
+        #m contains I_E you can see line 279
         with h5py.File(str(self.v)+'m.hdf5','w') as f:
             f.create_dataset('m',data = m)
             f.close()
             
         diffuse_raw = self.diffuse_x(self.v) 
-        delt_m = diffuse_raw + I_E - m
+        #m contains I_E you can see line 279
+        delt_m = (diffuse_raw + I_E) - m
         return params,delt_m,diffuse_raw,m
 
     def Fortran2Py_optical_deepth(self, l, b, Te = 8000):
@@ -355,8 +393,8 @@ class absorption_JRZ(object):
         
         i = a 
         s = 0
-
-        while i <= b:
+        #take the left value dont take the right value
+        while i < b:
             index_ = np.int(i / step - 1)
             s += (f(i,args[0],args[1],args[2],args[3]) * np.exp(-tao[index_])) * dx
             i += dx
@@ -459,21 +497,21 @@ class absorption_JRZ(object):
 
     def critical_distance(self,l,b,delt_m,params):
         import scipy.optimize as so
-        #import scipy.integrate as integrate
         #bug report : the lower limit is from 0.01 not 0
         value = 0.5 * self.Quad(self._new, 0.01, 50,args=(l,b,delt_m,params)) 
-        def func(x,l,b,delt_m,params):
-            return self.Quad(self._new, 0.01, x,args=(l,b,delt_m,params)) - value
-        #sol = so.fsolve(func,np.array([1]),args=(l,b,delt_m,params),xtol=1,maxfev=1000)
-        sol = 0
+        
+        add_value = 0
         Y = []
-        for i in np.arange(0.01,50,0.01):
-            result = self.Quad(self._new,0.01,i,args=(l,b,delt_m,params)) - value
-            Y.append(result)
-        Y = list(np.abs(Y))
-        container = np.arange(0.01,50,0.01)
-        index = Y.index(min(Y))
-        sol = container[index]  
+        for i in np.arange(0.01,6.6,0.01):
+            add_value += self.Quad(self._new,i,i+0.01,args=(l,b,delt_m,params))
+            Y.append(add_value)
+            if add_value - value <= 0:
+                sol = i
+                continue
+        #Y = list(np.abs(Y))
+        #container = np.arange(0.01,6.6,0.01)
+        #index = Y.index(min(Y))
+        #sol = container[index]  
         return sol
 
 
@@ -509,6 +547,7 @@ class absorption_JRZ(object):
                 pix_value =self.integrate_by_hand(self._new, 0.01, dist, args=(l, b, delt_m[pix_number], params))
                 if self.critical_dis == True: 
                     distance = self.critical_distance(l,b,delt_m[pix_number],params)
+                    print 'distance',distance
                 else:
                     distance = 0.
                 l, b = hp.pix2ang(self.nside, pix_number, nest = False, lonlat = True)
@@ -520,6 +559,7 @@ class absorption_JRZ(object):
                 result_absorb.append([pix_number, pix_value])
             else:
                 result_absorb.append([pix_number, pix_value, distance])
+            print ('rest_number',12*self.nside**2 - pix_number)
         #if self.test == True:
         if False:
 
@@ -528,8 +568,9 @@ class absorption_JRZ(object):
             result_absorb = mpiutil.gather_list(result_absorb, root = None)
         if rank == 0:
             if self.critical_dis == True:
-                with h5py.File(str(self.v)+'MHz_critical_dist.hdf5','r') as f:
-                    f.create_dataset('critical_distance',data = result_absorb[:,2])
+                with h5py.File(str(self.v)+'MHz_critical_dist.hdf5','w') as f:
+                    f.create_dataset('critical_distance',data = result_absorb)
+                    print ('critical_dis is saved')
             #if self.test == True:
             if False:
                 with h5py.File('./' + str(self.emi_form)+str(self.v) + 'F2py_absorb.hdf5', 'w') as f:
