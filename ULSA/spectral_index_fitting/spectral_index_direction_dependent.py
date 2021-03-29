@@ -56,33 +56,67 @@ class direction_dependent_index(object):
 
         return m[..., new_pix]
 
+    def minus_free_free(self,m,v,downgrade_to):
+        #in galactic coordinate
+        with h5py.File(self.file_dir + '/Free_free_emission/T_ff_nu_'+str(v)+'MHz.hdf5','r') as f:
+            free_free_G = f['free_free'][:]
+        #free_free_G = hp.ud_grade(free_free_G,downgrade_to)
+        
+        #smothing the data in order to have same resolution.
+        free_free_G = self.smooth(free_free_G)
+        m = self.change_coord(m,["C","G"])
+        m = self.masked_smoothing(m)
+        m = self.change_coord(m,["G","C"])
+
+        free_free_G = self.change_coord(free_free_G,['G','C']) 
+        result = m - free_free_G
+        #setting the value less than 0.1k to nan value.
+        result[np.where(result<0.1)] = np.nan
+        print ('np.where(result<0.1',np.where(result<0.1)[0].shape)
+        return result
+
     
     def IndexToDeclRa(self,index,downgrade_to):
         theta,phi=hp.pix2ang(downgrade_to,index)
         return -np.degrees(theta-np.pi/2.),np.degrees(np.pi*2.-phi)
-    
+
     def read_file(self,downgrade_to= 256, resolution = 5):
 
         with h5py.File(self.file_dir + '/Guzman/wlb_45MHz.hdf5','r') as h:
             hpmap_45_old = h['hpmap'][:]
-        hpmap_408 = hp.read_map(self.file_dir + '/Haslam/haslam408_dsds_Remazeilles2014.fits',dtype = np.float64)
+        hpmap_45_old = self.minus_free_free(hpmap_45_old,45,downgrade_to)
+        hpmap_408 = hp.read_map(self.file_dir + '/Haslam/haslam408_dsds_Remazeilles2014.fits')
         #downgrade to 256 may be, and change the coordinate from galaxy to equatorial
         hpmap_408 = hp.ud_grade(hpmap_408,downgrade_to)
         hpmap_408 = self.change_coord(hpmap_408,['G', 'C'])
+        if True:
+            hpmap_408 = self.minus_free_free(hpmap_408,408,downgrade_to)
         
         #####
         #the data from LWA    
-        hpmap_35 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-35.fits',dtype = np.float64)
-        hpmap_38 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-38.fits',dtype = np.float64)
-        hpmap_40 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-40.fits',dtype = np.float64)
-        hpmap_45 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-45.fits',dtype = np.float64)
-        hpmap_50 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-50.fits',dtype = np.float64)
-        hpmap_60 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-60.fits',dtype = np.float64)
-        hpmap_70 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-70.fits',dtype = np.float64)
-        hpmap_74 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-74.fits',dtype = np.float64)
-        hpmap_80 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-80.fits',dtype = np.float64)
-       
+        hpmap_35 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-35.fits')
+        hpmap_35 = self.minus_free_free(hpmap_35,35,downgrade_to)
+        hpmap_38 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-38.fits')
+        hpmap_38 = self.minus_free_free(hpmap_38,38,downgrade_to)
+        hpmap_40 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-40.fits')
+        hpmap_40 = self.minus_free_free(hpmap_40,40,downgrade_to)
+        hpmap_45 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-45.fits')
+        hpmap_45 = self.minus_free_free(hpmap_45,45,downgrade_to)
+        hpmap_50 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-50.fits')
+        hpmap_50 = self.minus_free_free(hpmap_50,50,downgrade_to)
+        hpmap_60 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-60.fits')
+        hpmap_60 = self.minus_free_free(hpmap_60,60,downgrade_to)
+        hpmap_70 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-70.fits')
+        hpmap_70 = self.minus_free_free(hpmap_70,70,downgrade_to)
+        hpmap_74 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-74.fits')
+        hpmap_74 = self.minus_free_free(hpmap_74,74,downgrade_to)
+        hpmap_80 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-80.fits')
+        hpmap_80 = self.minus_free_free(hpmap_80,80,downgrade_to)
+        print ('np.isnan(hpmap_35)',np.isnan(hpmap_35)) 
         return hpmap_408,hpmap_45_old,hpmap_35,hpmap_38,hpmap_40,hpmap_45,hpmap_50,hpmap_60,hpmap_70,hpmap_74,hpmap_80
+ 
+
+       
 
     
     def masked_smoothing(self,U, rad=5.0):     
@@ -128,7 +162,8 @@ class direction_dependent_index(object):
             X = self.change_coord(X,['C','G'])
             nans, x= self.nan_helper(X)
             X[nans]= np.interp(x(nans), x(~nans), X[~nans])
-            X = self.smooth(X)
+            #smooth step have been done in minus_free_free
+            #X = self.smooth(X)
 
             X = hp.ud_grade(X,downgrade_to)
             if key == 'hpmap_35':
@@ -172,7 +207,7 @@ class direction_dependent_index(object):
                 pix_num = self.DeclRaToIndex(dec,ra,downgrade_to)
                 pix_number_45.append(pix_num)
         
-
+        # at this position the pixel value - I_E(v) nearly zero or less zero, so we dont need the data when calcule index in that LOS, by setting the value to zero, so it can be tell apart by the mask_condition in line 226
         hpmap_40[pix_number_45] = 0. 
         hpmap_45[pix_number_45] = 0. 
         hpmap_50[pix_number_45] = 0. 
@@ -247,6 +282,8 @@ class direction_dependent_index(object):
                 print ('the ith pixel no available data',i)
             else:  
                 Para_constant=leastsq(self.error1,beta,args=(x1,x2,y))[0][0]
+            if i % 100 == 0:
+                print ('Para_constant',Para_constant,'left_number',12*256**2 - i)
             spectral_index_lwa_and_408.append(Para_constant)
         spectral_index_lwa_and_408 = np.array(spectral_index_lwa_and_408).reshape(-1)
         index_45_old_and_408,Mask = self.index_between_45_and_408(hpmap_45_old,hpmap_408)
@@ -277,9 +314,12 @@ class direction_dependent_index(object):
             new_map.append(pix_value)
         new_map = np.array(new_map)
         new_map = self.change_coord(new_map,['C','G'])
-        #with h5py.File(self.file_dir1 + '/spectral_index_map.hdf5','w') as f:
-        #    f['spectral_index'] = new_map
-        #    f.close()
+        nans, x = self.nan_helper(new_map)
+        new_map[nans]=np.interp(x(nans), x(~nans), new_map[~nans])
+
+        with h5py.File(self.file_dir1 + '/spectral_index_map.hdf5','w') as f:
+            f['spectral_index'] = new_map
+            f.close()
 
         #f1 = h5py.File(self.file_dir + '/spectral_index_map.hdf5', 'r+') # open the file
         #data = f1['spectral_index']       # load the data
