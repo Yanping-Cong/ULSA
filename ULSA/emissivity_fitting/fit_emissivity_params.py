@@ -20,8 +20,7 @@ from ULSA.emissivity_fitting.produce_data_for_fitting import smooth
 #from Params.interpolate_sky.interpolate_sky_map import produce_index
 class free_free(object):
 
-    def __init__(self, v, nside, index_type, dist, using_raw_diffuse,using_default_params,input_spectral_index=None,v_file_dir=None,emi_form = 'exp',params_408=np.array([71.19, 4.23, 0.03, 0.47, 0.77])
-):
+    def __init__(self, v, nside, index_type, dist, using_raw_diffuse,using_default_params,params_408,input_spectral_index=None,v_file_dir=None,emi_form = 'exp'):
         self.v = v#20Mhz frequency in hz
         self.nside = nside       
         self.index_type = index_type
@@ -81,11 +80,11 @@ class free_free(object):
             func = self.fun_for_curvefit_R0R2
             xyz = self.produce_xyz()
             #print 'xyz.shape',xyz.shape
-            beta_ = -2.49 + 0.7 * np.exp(-self.v/1.0)
+            beta_ = -2.51 + 0.7 * np.exp(-self.v/1.0)
             A_upper_limit = 10* 15 * (self.v/408.)**beta_
             print 'A_upper_limit',A_upper_limit
             params, pcov = optimize.curve_fit(func, xyz[:,:2], xyz[:,2], guess, bounds=(np.array([0,1e-5,1e-5,1e-5,1e-5]),np.array([A_upper_limit,5,3.1,2,3.1])), method='trf')
-
+        print ('params_408',params)
         with h5py.File(str(self.v)+'Mhz_fitted_param.hdf5','w') as f:
             f.create_dataset('params',data = params)
             f.create_dataset('v',data = self.v)
@@ -101,10 +100,12 @@ class free_free(object):
                         abcz0 = f['params'][:]
                 except:
                     if int(self.v) == int(408):
+                        print ('fitting the params of synchrotron emissivity in 408MHz') 
                         abcz0 = self.curve_fit()
                     else:
                         raise 'fitting params must at frequency of 408MHz for constant ,pixel dependent and freq dependent spectral index situation'
             else:
+                
                 abcz0 = self.params_408
 
         return abcz0
