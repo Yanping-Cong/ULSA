@@ -547,7 +547,7 @@ class absorption_JRZ(object):
                 pix_value =self.integrate_by_hand(self._new, 0.01, dist, args=(l, b, delt_m[pix_number], params))
                 if self.critical_dis == True: 
                     distance = self.critical_distance(l,b,delt_m[pix_number],params)
-                    print 'distance',distance
+                    #print 'distance',distance
                 else:
                     distance = 0.
                 l, b = hp.pix2ang(self.nside, pix_number, nest = False, lonlat = True)

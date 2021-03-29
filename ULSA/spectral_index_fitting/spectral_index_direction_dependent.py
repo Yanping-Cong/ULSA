@@ -72,7 +72,7 @@ class direction_dependent_index(object):
         result = m - free_free_G
         #setting the value less than 0.1k to nan value.
         result[np.where(result<0.1)] = np.nan
-        print ('np.where(result<0.1',np.where(result<0.1)[0].shape)
+        #print ('np.where(result<0.1',np.where(result<0.1)[0].shape)
         return result
 
     
@@ -112,7 +112,7 @@ class direction_dependent_index(object):
         hpmap_74 = self.minus_free_free(hpmap_74,74,downgrade_to)
         hpmap_80 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-80.fits')
         hpmap_80 = self.minus_free_free(hpmap_80,80,downgrade_to)
-        print ('np.isnan(hpmap_35)',np.isnan(hpmap_35)) 
+        #print ('np.isnan(hpmap_35)',np.isnan(hpmap_35)) 
         return hpmap_408,hpmap_45_old,hpmap_35,hpmap_38,hpmap_40,hpmap_45,hpmap_50,hpmap_60,hpmap_70,hpmap_74,hpmap_80
  
 
@@ -279,11 +279,11 @@ class direction_dependent_index(object):
             beta = [-2.6]
             if int(value_freq.shape[0])==0:
                 Para_constant = np.nan
-                print ('the ith pixel no available data',i)
+                #print ('the ith pixel no available data',i)
             else:  
                 Para_constant=leastsq(self.error1,beta,args=(x1,x2,y))[0][0]
             if i % 100 == 0:
-                print ('Para_constant',Para_constant,'left_number',12*256**2 - i)
+                #print ('Para_constant',Para_constant,'left_number',12*256**2 - i)
             spectral_index_lwa_and_408.append(Para_constant)
         spectral_index_lwa_and_408 = np.array(spectral_index_lwa_and_408).reshape(-1)
         index_45_old_and_408,Mask = self.index_between_45_and_408(hpmap_45_old,hpmap_408)

@@ -82,7 +82,7 @@ class constant_index(object):
         result = m - free_free_G
         #setting the value less than 0.1k to nan value.
         result[np.where(result<0.1)] = np.nan
-        print ('np.where(result<0.1',np.where(result<0.1)[0].shape)
+        #print ('np.where(result<0.1',np.where(result<0.1)[0].shape)
         return result
     
     def read_file(self,downgrade_to= 256, resolution = 5):
@@ -117,7 +117,7 @@ class constant_index(object):
         hpmap_74 = self.minus_free_free(hpmap_74,74,downgrade_to)
         hpmap_80 = hp.read_map(self.file_dir + '/LWA/healpix-all-sky-rav-rsclean-map-80.fits')
         hpmap_80 = self.minus_free_free(hpmap_80,80,downgrade_to)
-        print ('np.isnan(hpmap_35)',np.isnan(hpmap_35)) 
+        #print ('np.isnan(hpmap_35)',np.isnan(hpmap_35)) 
         return hpmap_408,hpmap_45_old,hpmap_35,hpmap_38,hpmap_40,hpmap_45,hpmap_50,hpmap_60,hpmap_70,hpmap_74,hpmap_80
 
     
@@ -213,7 +213,7 @@ class constant_index(object):
         Dict,Mask_missing_region_lwa = self.smoothing_data(downgrade_to)
         #print 'in calculate index'
         hpmap_408, hpmap_45_old,hpmap_35,hpmap_38,hpmap_40,hpmap_45,hpmap_50,hpmap_60,hpmap_70,hpmap_74,hpmap_80 = Dict['hpmap_408'],Dict['hpmap_45_old'],Dict['hpmap_35'],Dict['hpmap_38'],Dict['hpmap_40'],Dict['hpmap_45'],Dict['hpmap_50'],Dict['hpmap_60'],Dict['hpmap_70'],Dict['hpmap_74'],Dict['hpmap_80']
-        print 'mean(408-I_E(408)',np.mean(hpmap_408-self.I_E(408))  
+        #print 'mean(408-I_E(408)',np.mean(hpmap_408-self.I_E(408))  
         #hpmap_408, hpmap_45_old,hpmap_35,hpmap_38,hpmap_40,hpmap_45,hpmap_50,hpmap_60,hpmap_70,hpmap_74,hpmap_80 = self.read_file()
         hpmap_40 = self.change_coord(hpmap_40,['G','C'])
         hpmap_45 = self.change_coord(hpmap_45,['G','C'])
@@ -322,7 +322,7 @@ class constant_index(object):
         X2 = np.array(X2)
         Y = np.array(Y)
         Para_constant=leastsq(self.error1,beta,args=(X1,X2,Y))[0][0]
-        print ('Para_constant',Para_constant)
+        #print ('Para_constant',Para_constant)
         return Para_constant
 
     def IndexToDeclRa(self,index,downgrade_to):
