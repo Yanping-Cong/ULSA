@@ -21,4 +21,4 @@ There are an example in ./example, one can simpyly go to the dir and run test.py
 Documentation can be found at <https://ulsa.readthedocs.io/en/latest/>.
 
 ## Warning
-If this code helps you, please refer to the [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4454154.svg)](https://doi.org/10.5281/zenodo.4454154), or contact me by email and I will send you a link to the article ypcong@bao.ac.cn
+If this code helps you, please refer to the [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4454153.svg)](https://doi.org/10.5281/zenodo.4454154), or contact me by email and I will send you a link to the article ypcong@bao.ac.cn
