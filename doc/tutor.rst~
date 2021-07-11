@@ -40,7 +40,7 @@ Some examples for different need
 1. example one: Users want to output a sky map at 1 Mhz with a NSIDE of 64 and a spectral index in the form of
 a constant spectral index. they can choose the following parameter setting::
 
-    >>> (v = 1, nside = 64, index_type = ’constant_index_minus_I_E’, distance = 50, using_raw_diffuse = False,using_default_params = True,critical_dis = False,output_absorp_free_skymap = False)
+    >>> (v = 1, nside = 64, index_type = ’constant_index_minus’, distance = 50, using_raw_diffuse = False,using_default_params = True,critical_dis = False,output_absorp_free_skymap = False)
 
 2. example two: Users want to output a sky map at 1 Mhz with a NSIDE of 64 and a spectral index in the form of
 a frequency dependent spectral index. they can choose the following parameter setting::
