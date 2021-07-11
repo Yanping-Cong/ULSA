@@ -283,7 +283,7 @@ class direction_dependent_index(object):
             else:  
                 Para_constant=leastsq(self.error1,beta,args=(x1,x2,y))[0][0]
             if i % 100 == 0:
-                print ('Para_constant',Para_constant,'left_number',12*256**2 - i)
+                #print ('Para_constant',Para_constant,'left_number',12*256**2 - i)
             spectral_index_lwa_and_408.append(Para_constant)
         spectral_index_lwa_and_408 = np.array(spectral_index_lwa_and_408).reshape(-1)
         index_45_old_and_408,Mask = self.index_between_45_and_408(hpmap_45_old,hpmap_408)
